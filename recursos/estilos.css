@@ -379,6 +379,45 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px;
 }
 
+/* ==========================================================
+   TOOLTIP DE LOS ÍCONOS DE AYUDA "?"
+   ========================================================== */
+
+/* Caja emergente del tooltip */
+[data-baseweb="tooltip"],
+div[role="tooltip"] {
+    background: #32264f !important;
+    color: #ffffff !important;
+    border: 1px solid #8462a5 !important;
+    border-radius: 9px !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .35) !important;
+}
+
+/* Texto interno del tooltip */
+[data-baseweb="tooltip"] *,
+div[role="tooltip"] * {
+    color: #ffffff !important;
+}
+
+/* Flecha del tooltip */
+[data-baseweb="tooltip"]::before,
+[data-baseweb="tooltip"]::after,
+div[role="tooltip"]::before,
+div[role="tooltip"]::after {
+    border-top-color: #32264f !important;
+    border-bottom-color: #32264f !important;
+    color: #32264f !important;
+}
+
+/* Ícono de ayuda */
+[data-testid="stTooltipIcon"] {
+    color: #b493c7 !important;
+}
+
+/* Hover del ícono */
+[data-testid="stTooltipIcon"]:hover {
+    color: #eda0ca !important;
+}
 
 /* ==========================================================
    RESPONSIVE
