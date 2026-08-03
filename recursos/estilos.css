@@ -452,10 +452,8 @@ div[role="tooltip"] * {
 
 
 
-/* Botón del tooltip */
-button[aria-label*="Help"] svg,
-button[aria-label*="help"] svg {
+[data-baseweb="tooltip"] + svg,
+svg[data-testid="stTooltipIcon"] {
     fill: #eda0ca !important;
     color: #eda0ca !important;
-    stroke: #eda0ca !important;
 }
