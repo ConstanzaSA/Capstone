@@ -8,22 +8,35 @@ encabezado("Integrantes", "Página individual de tareas pendientes y completadas
 integrantes = obtener_integrantes()
 tareas = obtener_tareas()
 
-pestanas = st.tabs([i["nombre"] for i in integrantes])
+pestanas = st.tabs([integrante["nombre"] for integrante in integrantes])
 for pestana, integrante in zip(pestanas, integrantes):
     with pestana:
         col1, col2 = st.columns(2)
-        nuevo_nombre = col1.text_input("Nombre", integrante["nombre"], key=f"nombre_{integrante['id']}")
-        nuevo_rol = col2.text_input("Rol", integrante["rol"], key=f"rol_{integrante['id']}")
-        if st.button("Guardar datos del integrante", key=f"guardar_integrante_{integrante['id']}"):
+        nuevo_nombre = col1.text_input(
+            "Nombre",
+            integrante["nombre"],
+            key=f"nombre_{integrante['id']}",
+        )
+        nuevo_rol = col2.text_input(
+            "Rol",
+            integrante["rol"],
+            key=f"rol_{integrante['id']}",
+        )
+        if st.button(
+            "Guardar datos del integrante",
+            key=f"guardar_integrante_{integrante['id']}",
+        ):
             integrante["nombre"] = nuevo_nombre.strip() or integrante["nombre"]
             integrante["rol"] = nuevo_rol.strip()
             guardar_integrantes(integrantes)
             st.success("Integrante actualizado.")
             st.rerun()
 
-        asignadas = [t for t in tareas if t["responsable_id"] == integrante["id"]]
-        pendientes = [t for t in asignadas if t["estado"] != "Completada"]
-        completadas = [t for t in asignadas if t["estado"] == "Completada"]
+        asignadas = [
+            tarea for tarea in tareas if tarea.get("responsable_id") == integrante["id"]
+        ]
+        pendientes = [tarea for tarea in asignadas if tarea["estado"] != "Completada"]
+        completadas = [tarea for tarea in asignadas if tarea["estado"] == "Completada"]
 
         izquierda, derecha = st.columns(2)
         with izquierda:
@@ -33,7 +46,10 @@ for pestana, integrante in zip(pestanas, integrantes):
             for tarea in pendientes:
                 with st.container(border=True):
                     st.markdown(f"**{tarea['titulo']}**")
-                    st.caption(f"{tarea['semana']} · {tarea['estado']} · {tarea['avance']}%")
+                    st.caption(
+                        f"Entrega: {tarea.get('fecha_entrega') or 'Sin fecha'} · "
+                        f"{tarea['estado']} · {tarea['avance']}%"
+                    )
                     st.progress(tarea["avance"] / 100)
         with derecha:
             st.subheader("Tareas completadas")
@@ -42,4 +58,6 @@ for pestana, integrante in zip(pestanas, integrantes):
             for tarea in completadas:
                 with st.container(border=True):
                     st.markdown(f"**{tarea['titulo']}**")
-                    st.caption(f"{tarea['semana']} · Completada")
+                    st.caption(
+                        f"Entrega: {tarea.get('fecha_entrega') or 'Sin fecha'} · Completada"
+                    )
