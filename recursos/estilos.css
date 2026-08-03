@@ -380,6 +380,24 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 }
 
 /* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 760px) {
+    .encabezado-principal {
+        padding: 1.15rem 1.2rem;
+    }
+
+    .icono-robot {
+        font-size: 2.8rem;
+    }
+
+    .tarjeta-indicador {
+        min-height: 112px;
+    }
+}
+
+/* ==========================================================
    TOOLTIP DE LOS ÍCONOS DE AYUDA "?"
    ========================================================== */
 
@@ -418,21 +436,14 @@ div[role="tooltip"]::after {
 [data-testid="stTooltipIcon"]:hover {
     color: #eda0ca !important;
 }
+[data-baseweb="popover"] [role="tooltip"],
+[data-baseweb="popover"] {
+    background: #32264f !important;
+    color: #ffffff !important;
+}
 
-/* ==========================================================
-   RESPONSIVE
-   ========================================================== */
-
-@media (max-width: 760px) {
-    .encabezado-principal {
-        padding: 1.15rem 1.2rem;
-    }
-
-    .icono-robot {
-        font-size: 2.8rem;
-    }
-
-    .tarjeta-indicador {
-        min-height: 112px;
-    }
+[data-baseweb="popover"] p,
+[data-baseweb="popover"] span,
+[data-baseweb="popover"] div {
+    color: #ffffff !important;
 }
