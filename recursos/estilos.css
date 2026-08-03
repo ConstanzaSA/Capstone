@@ -1,56 +1,204 @@
 /* ==========================================================
-   OCULTAR BARRA SUPERIOR BLANCA DE STREAMLIT
+   PALETA GENERAL
    ========================================================== */
 
+:root {
+    --fondo-general: #0d0c12;
+    --fondo-sidebar: #17131d;
+    --fondo-panel: #191620;
+    --fondo-campo: #17131d;
+
+    --morado-oscuro: #32264f;
+    --morado-principal: #5b3f7d;
+    --morado-borde: #8462a5;
+    --lila: #b493c7;
+
+    --rosado: #eda0ca;
+    --rosado-borde: #ffd1e8;
+
+    --texto-principal: #ffffff;
+    --texto-secundario: #e4d9ed;
+    --texto-hover: #2b1730;
+}
+
+
+/* ==========================================================
+   FONDO GENERAL Y BARRA SUPERIOR
+   ========================================================== */
+
+html,
+body,
+#root,
+.stApp,
+[data-testid="stApp"],
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"] {
+    background: var(--fondo-general) !important;
+    color: var(--texto-principal) !important;
+}
+
 [data-testid="stHeader"] {
-    background: #0d0c12 !important;
+    background: var(--fondo-general) !important;
     height: 0 !important;
     min-height: 0 !important;
     border: none !important;
     box-shadow: none !important;
 }
 
-[data-testid="stToolbar"] {
-    display: none !important;
-}
-
-[data-testid="stDecoration"] {
-    display: none !important;
-}
-
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
 [data-testid="stStatusWidget"] {
     display: none !important;
 }
 
-#MainMenu {
-    visibility: hidden !important;
-}
-
+#MainMenu,
 footer {
     visibility: hidden !important;
 }
 
 .block-container {
+    max-width: 1280px !important;
     padding-top: 1rem !important;
+    padding-bottom: 3rem !important;
 }
 
 
 /* ==========================================================
-   COLORES GENERALES DE BOTONES
+   TEXTO GENERAL
    ========================================================== */
 
-:root {
-    --boton-morado: #5b3f7d;
-    --boton-morado-borde: #8462a5;
-    --boton-rosado: #eda0ca;
-    --boton-rosado-borde: #ffd1e8;
-    --texto-boton: #ffffff;
-    --texto-hover: #2b1730;
+h1, h2, h3, h4, h5, h6,
+p, span, label, small,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stWidgetLabel"] p,
+[data-testid="stCaptionContainer"] p,
+.stMarkdown,
+.stCaption {
+    color: var(--texto-principal) !important;
+}
+
+[data-testid="stCaptionContainer"] p,
+small {
+    color: var(--texto-secundario) !important;
 }
 
 
 /* ==========================================================
-   TODOS LOS BOTONES DE STREAMLIT
+   ENCABEZADO PRINCIPAL
+   ========================================================== */
+
+.encabezado-principal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.4rem 1.8rem;
+    margin-bottom: 1.3rem;
+    border-radius: 22px;
+    background: linear-gradient(
+        120deg,
+        var(--morado-oscuro),
+        var(--morado-principal)
+    );
+    border: 1px solid rgba(255, 255, 255, .12);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+}
+
+.encabezado-principal h1 {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    line-height: 1.1;
+    font-weight: 850;
+}
+
+.encabezado-principal p {
+    margin: .4rem 0 0 !important;
+    color: #f0e8f8 !important;
+    font-size: 1rem;
+}
+
+.icono-robot {
+    flex: 0 0 auto;
+    font-size: 4rem;
+    line-height: 1;
+}
+
+
+/* ==========================================================
+   TARJETAS DE INDICADORES
+   ========================================================== */
+
+.tarjeta-indicador {
+    min-height: 128px;
+    height: 100%;
+    padding: 1rem 1.1rem;
+    margin-bottom: .8rem;
+    border-radius: 16px;
+    background: var(--fondo-panel);
+    border: 1px solid rgba(177, 145, 205, .25);
+    border-left: 7px solid var(--lila);
+    box-shadow: 0 7px 20px rgba(0, 0, 0, .24);
+}
+
+.indicador-titulo {
+    color: #ffffff !important;
+    text-transform: uppercase;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .045em;
+}
+
+.indicador-valor {
+    color: #ffffff !important;
+    font-size: 1.8rem;
+    font-weight: 850;
+    margin-top: .25rem;
+    line-height: 1.15;
+}
+
+.indicador-detalle {
+    color: var(--texto-secundario) !important;
+    font-size: .82rem;
+    margin-top: .3rem;
+}
+
+
+/* ==========================================================
+   CAMPOS DE ENTRADA
+   ========================================================== */
+
+input,
+textarea,
+[data-baseweb="select"] > div,
+[data-baseweb="input"] > div,
+[data-testid="stDateInput"] input,
+[data-testid="stNumberInput"] input {
+    color: #ffffff !important;
+    background: var(--fondo-campo) !important;
+    border-color: rgba(255, 255, 255, .22) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #c8bdd0 !important;
+    opacity: 1;
+}
+
+[data-baseweb="popover"],
+[data-baseweb="menu"],
+[data-baseweb="calendar"] {
+    background: var(--fondo-panel) !important;
+    color: #ffffff !important;
+}
+
+
+/* ==========================================================
+   BOTONES
    ========================================================== */
 
 .stButton > button,
@@ -59,13 +207,12 @@ footer {
 .stLinkButton > a,
 button[kind="primary"],
 button[kind="secondary"] {
-    background: var(--boton-morado) !important;
-    border: 1px solid var(--boton-morado-borde) !important;
-    color: var(--texto-boton) !important;
+    background: var(--morado-principal) !important;
+    border: 1px solid var(--morado-borde) !important;
+    color: #ffffff !important;
     border-radius: 11px !important;
     font-weight: 750 !important;
     box-shadow: none !important;
-
     transition:
         background-color .18s ease,
         border-color .18s ease,
@@ -73,8 +220,6 @@ button[kind="secondary"] {
         transform .18s ease !important;
 }
 
-
-/* Texto interno de todos los botones */
 .stButton > button p,
 .stButton > button span,
 .stFormSubmitButton > button p,
@@ -87,26 +232,24 @@ button[kind="primary"] p,
 button[kind="primary"] span,
 button[kind="secondary"] p,
 button[kind="secondary"] span {
-    color: var(--texto-boton) !important;
+    color: #ffffff !important;
     font-weight: 750 !important;
 }
 
-
-/* Hover */
 .stButton > button:hover,
 .stFormSubmitButton > button:hover,
 .stDownloadButton > button:hover,
 .stLinkButton > a:hover,
 button[kind="primary"]:hover,
-button[kind="secondary"]:hover {
-    background: var(--boton-rosado) !important;
-    border-color: var(--boton-rosado-borde) !important;
+button[kind="secondary"]:hover,
+.stButton > button:active,
+.stFormSubmitButton > button:active {
+    background: var(--rosado) !important;
+    border-color: var(--rosado-borde) !important;
     color: var(--texto-hover) !important;
     transform: translateY(-1px);
 }
 
-
-/* Texto durante hover */
 .stButton > button:hover p,
 .stButton > button:hover span,
 .stFormSubmitButton > button:hover p,
@@ -114,64 +257,27 @@ button[kind="secondary"]:hover {
 .stDownloadButton > button:hover p,
 .stDownloadButton > button:hover span,
 .stLinkButton > a:hover p,
-.stLinkButton > a:hover span,
-button[kind="primary"]:hover p,
-button[kind="primary"]:hover span,
-button[kind="secondary"]:hover p,
-button[kind="secondary"]:hover span {
+.stLinkButton > a:hover span {
     color: var(--texto-hover) !important;
-}
-
-
-/* Estado presionado */
-.stButton > button:active,
-.stFormSubmitButton > button:active,
-.stDownloadButton > button:active,
-.stLinkButton > a:active,
-button[kind="primary"]:active,
-button[kind="secondary"]:active {
-    background: var(--boton-rosado) !important;
-    border-color: var(--boton-rosado-borde) !important;
-    color: var(--texto-hover) !important;
-    transform: translateY(0);
-}
-
-
-/* Estado con foco */
-.stButton > button:focus,
-.stButton > button:focus-visible,
-.stFormSubmitButton > button:focus,
-.stFormSubmitButton > button:focus-visible,
-.stDownloadButton > button:focus,
-.stDownloadButton > button:focus-visible {
-    background: var(--boton-rosado) !important;
-    border-color: var(--boton-rosado-borde) !important;
-    color: var(--texto-hover) !important;
-    box-shadow: 0 0 0 2px rgba(237, 160, 202, .25) !important;
 }
 
 
 /* ==========================================================
-   EXPANDER: AÑADIR UNA TAREA
+   EXPANDER
    ========================================================== */
 
 [data-testid="stExpander"] {
-    border-color: rgba(132, 98, 165, .35) !important;
     background: transparent !important;
+    border-color: rgba(132, 98, 165, .35) !important;
 }
 
 [data-testid="stExpander"] summary {
-    background: #3a2939 !important;
+    background: var(--morado-principal) !important;
     border-radius: 11px !important;
     color: #ffffff !important;
-
-    transition:
-        background-color .18s ease,
-        color .18s ease !important;
+    transition: background-color .18s ease, color .18s ease !important;
 }
 
-
-/* Texto e iconos del expander */
 [data-testid="stExpander"] summary p,
 [data-testid="stExpander"] summary span,
 [data-testid="stExpander"] summary svg {
@@ -179,22 +285,15 @@ button[kind="secondary"]:active {
     fill: #ffffff !important;
 }
 
-
-/* Hover del expander */
 [data-testid="stExpander"] summary:hover,
 [data-testid="stExpander"] summary:focus-visible {
-    background: var(--boton-rosado) !important;
+    background: var(--rosado) !important;
     color: var(--texto-hover) !important;
 }
 
-
-/* Texto e iconos en hover */
 [data-testid="stExpander"] summary:hover p,
 [data-testid="stExpander"] summary:hover span,
-[data-testid="stExpander"] summary:hover svg,
-[data-testid="stExpander"] summary:focus-visible p,
-[data-testid="stExpander"] summary:focus-visible span,
-[data-testid="stExpander"] summary:focus-visible svg {
+[data-testid="stExpander"] summary:hover svg {
     color: var(--texto-hover) !important;
     fill: var(--texto-hover) !important;
 }
@@ -204,8 +303,9 @@ button[kind="secondary"]:active {
    NAVEGACIÓN LATERAL
    ========================================================== */
 
-[data-testid="stSidebar"] {
-    background: #17131d !important;
+[data-testid="stSidebar"],
+[data-testid="stSidebarContent"] {
+    background: var(--fondo-sidebar) !important;
 }
 
 [data-testid="stSidebarNav"] a,
@@ -213,7 +313,6 @@ a[data-testid="stSidebarNavLink"] {
     background: transparent !important;
     border-radius: 9px !important;
     color: #ffffff !important;
-
     transition:
         background-color .18s ease,
         color .18s ease,
@@ -225,11 +324,9 @@ a[data-testid="stSidebarNavLink"] span {
     color: #ffffff !important;
 }
 
-
-/* Página seleccionada */
 [data-testid="stSidebarNav"] a[aria-current="page"],
 a[data-testid="stSidebarNavLink"][aria-current="page"] {
-    background: var(--boton-morado) !important;
+    background: var(--morado-principal) !important;
     color: #ffffff !important;
 }
 
@@ -239,11 +336,9 @@ a[data-testid="stSidebarNavLink"][aria-current="page"] span {
     font-weight: 800 !important;
 }
 
-
-/* Hover del menú */
 [data-testid="stSidebarNav"] a:hover,
 a[data-testid="stSidebarNavLink"]:hover {
-    background: var(--boton-rosado) !important;
+    background: var(--rosado) !important;
     color: var(--texto-hover) !important;
     transform: translateX(3px);
 }
@@ -251,4 +346,54 @@ a[data-testid="stSidebarNavLink"]:hover {
 [data-testid="stSidebarNav"] a:hover span,
 a[data-testid="stSidebarNavLink"]:hover span {
     color: var(--texto-hover) !important;
+}
+
+
+/* ==========================================================
+   PESTAÑAS, CONTENEDORES, TABLAS Y MENSAJES
+   ========================================================== */
+
+button[data-baseweb="tab"] p,
+button[data-baseweb="tab"] span {
+    color: #ffffff !important;
+    font-weight: 750 !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(25, 22, 32, .72) !important;
+    border-color: rgba(177, 145, 205, .24) !important;
+}
+
+[data-testid="stDataFrame"],
+[data-testid="stTable"] {
+    color: #ffffff !important;
+}
+
+[data-testid="stAlert"] {
+    background: #171f34 !important;
+    color: #ffffff !important;
+}
+
+[data-testid="stPlotlyChart"] {
+    background: var(--fondo-general) !important;
+    border-radius: 12px;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 760px) {
+    .encabezado-principal {
+        padding: 1.15rem 1.2rem;
+    }
+
+    .icono-robot {
+        font-size: 2.8rem;
+    }
+
+    .tarjeta-indicador {
+        min-height: 112px;
+    }
 }
