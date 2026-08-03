@@ -398,52 +398,46 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 }
 
 /* ==========================================================
-   TOOLTIP DE LOS ÍCONOS DE AYUDA "?"
+   TOOLTIP DE AYUDA
    ========================================================== */
 
-/* Caja emergente del tooltip */
-[data-baseweb="tooltip"],
-div[role="tooltip"] {
-    background: #32264f !important;
-    color: #ffffff !important;
+/* Contenedor flotante del mensaje */
+div[data-baseweb="popover"]:has(div[role="tooltip"]) {
+    background: transparent !important;
+}
+
+/* Caja visible del tooltip */
+div[role="tooltip"],
+div[data-baseweb="popover"] div[role="tooltip"] {
+    background-color: #ffffff !important;
+    color: #2b1730 !important;
+
     border: 1px solid #8462a5 !important;
-    border-radius: 9px !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, .35) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+
+    opacity: 1 !important;
 }
 
-/* Texto interno del tooltip */
-[data-baseweb="tooltip"] *,
+/* Todo el texto que está dentro del mensaje */
+div[role="tooltip"] *,
+div[data-baseweb="popover"] div[role="tooltip"] * {
+    color: #2b1730 !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #2b1730 !important;
+}
+
+/* Párrafos concretos usados por Streamlit */
+div[role="tooltip"] p,
+div[role="tooltip"] span,
+div[role="tooltip"] div {
+    color: #2b1730 !important;
+    -webkit-text-fill-color: #2b1730 !important;
+}
+
+/* Evita que una transición vuelva a cambiar el color */
+div[role="tooltip"],
 div[role="tooltip"] * {
-    color: #ffffff !important;
-}
-
-/* Flecha del tooltip */
-[data-baseweb="tooltip"]::before,
-[data-baseweb="tooltip"]::after,
-div[role="tooltip"]::before,
-div[role="tooltip"]::after {
-    border-top-color: #32264f !important;
-    border-bottom-color: #32264f !important;
-    color: #32264f !important;
-}
-
-/* Ícono de ayuda */
-[data-testid="stTooltipIcon"] {
-    color: #b493c7 !important;
-}
-
-/* Hover del ícono */
-[data-testid="stTooltipIcon"]:hover {
-    color: #eda0ca !important;
-}
-[data-baseweb="popover"] [role="tooltip"],
-[data-baseweb="popover"] {
-    background: #32264f !important;
-    color: #ffffff !important;
-}
-
-[data-baseweb="popover"] p,
-[data-baseweb="popover"] span,
-[data-baseweb="popover"] div {
-    color: #ffffff !important;
+    transition: none !important;
+    animation-fill-mode: forwards !important;
 }
