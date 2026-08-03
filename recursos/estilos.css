@@ -1,11 +1,14 @@
 html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     background: #0d0c12;
+    color: #ffffff;
 }
+
 .block-container {
     max-width: 1280px;
     padding-top: 1.2rem;
     padding-bottom: 3rem;
 }
+
 .encabezado-principal {
     display: flex;
     align-items: center;
@@ -17,9 +20,11 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     background: linear-gradient(120deg, #32264f, #5b3f7d);
     border: 1px solid rgba(255,255,255,.12);
 }
-.encabezado-principal h1 { margin: 0; color: white; font-size: 2.25rem; }
-.encabezado-principal p { margin: .35rem 0 0; color: #ddd2eb; }
+
+.encabezado-principal h1 { margin: 0; color: #ffffff !important; font-size: 2.25rem; }
+.encabezado-principal p { margin: .35rem 0 0; color: #f0e8f8 !important; }
 .icono-robot { font-size: 4rem; }
+
 .tarjeta-indicador {
     min-height: 120px;
     padding: 1rem 1.1rem;
@@ -28,7 +33,81 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     border: 1px solid rgba(177,145,205,.25);
     border-left: 6px solid #a56ad1;
 }
-.indicador-titulo { color: #bdb4c8; text-transform: uppercase; font-size: .78rem; font-weight: 700; }
-.indicador-valor { color: white; font-size: 1.8rem; font-weight: 850; margin-top: .25rem; }
-.indicador-detalle { color: #aaa0b5; font-size: .8rem; margin-top: .25rem; }
-.stButton > button { border-radius: 11px; font-weight: 750; }
+
+.indicador-titulo { color: #ffffff !important; text-transform: uppercase; font-size: .78rem; font-weight: 800; }
+.indicador-valor { color: #ffffff !important; font-size: 1.8rem; font-weight: 850; margin-top: .25rem; }
+.indicador-detalle { color: #e4d9ed !important; font-size: .8rem; margin-top: .25rem; }
+
+/* Títulos y etiquetas completamente blancos para mejorar la lectura. */
+h1, h2, h3, h4, h5, h6,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stWidgetLabel"] p,
+label, .stMarkdown, .stCaption {
+    color: #ffffff !important;
+}
+
+/* Texto secundario legible. */
+[data-testid="stCaptionContainer"] p,
+small {
+    color: #e8deef !important;
+}
+
+/* Entradas oscuras con texto claro. */
+input, textarea,
+[data-baseweb="select"] > div,
+[data-baseweb="input"] > div {
+    color: #ffffff !important;
+    background: #17131d !important;
+    border-color: rgba(255,255,255,.22) !important;
+}
+
+input::placeholder, textarea::placeholder {
+    color: #c8bdd0 !important;
+    opacity: 1;
+}
+
+/* Botones: morado normal y rosado claro al pasar el mouse. */
+.stButton > button,
+.stFormSubmitButton > button,
+.stDownloadButton > button {
+    border-radius: 11px !important;
+    font-weight: 750 !important;
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.stButton > button:hover,
+.stFormSubmitButton > button:hover,
+.stDownloadButton > button:hover {
+    background: #f2a6cf !important;
+    border-color: #ffd0e8 !important;
+    color: #2b1730 !important;
+    transform: translateY(-1px);
+}
+
+/* Expander: evita el hover gris y usa rosado suave. */
+[data-testid="stExpander"] summary:hover,
+[data-testid="stExpander"] summary:focus-visible {
+    background: rgba(242,166,207,.18) !important;
+    color: #ffffff !important;
+}
+
+[data-testid="stExpander"] summary:hover p,
+[data-testid="stExpander"] summary:hover span {
+    color: #ffffff !important;
+}
+
+/* Pestañas más visibles. */
+button[data-baseweb="tab"] p,
+button[data-baseweb="tab"] span {
+    color: #ffffff !important;
+    font-weight: 750 !important;
+}
+
+/* Fondo oscuro para Plotly antes de que termine de cargar. */
+[data-testid="stPlotlyChart"] {
+    background: #17131d;
+    border-radius: 12px;
+}
