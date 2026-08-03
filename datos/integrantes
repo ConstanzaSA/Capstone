@@ -1,6 +1,6 @@
 [
-  {"id": "integrante_1", "nombre": "Integrante 1", "rol": "Mecánica"},
-  {"id": "integrante_2", "nombre": "Integrante 2", "rol": "Electrónica"},
-  {"id": "integrante_3", "nombre": "Integrante 3", "rol": "Programación"},
-  {"id": "integrante_4", "nombre": "Integrante 4", "rol": "Control"}
+  {"id": "integrante_1", "nombre": "Integrante 1", "rol": ""},
+  {"id": "integrante_2", "nombre": "Integrante 2", "rol": ""},
+  {"id": "integrante_3", "nombre": "Integrante 3", "rol": ""},
+  {"id": "integrante_4", "nombre": "Integrante 4", "rol": ""}
 ]
