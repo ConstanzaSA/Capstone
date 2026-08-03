@@ -441,19 +441,3 @@ div[role="tooltip"] * {
     transition: none !important;
     animation-fill-mode: forwards !important;
 }
-
-
-
-
-
-
-
-
-
-
-
-[data-baseweb="tooltip"] + svg,
-svg[data-testid="stTooltipIcon"] {
-    fill: #eda0ca !important;
-    color: #eda0ca !important;
-}
