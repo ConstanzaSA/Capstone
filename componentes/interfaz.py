@@ -8,8 +8,6 @@ def encabezado(titulo: str, subtitulo: str = "") -> None:
             <div>
                 <h1>{titulo}</h1>
                 <p>{subtitulo}</p>
-            </div>
-            <div class="icono-robot">🤖</div>
         </div>
         """,
         unsafe_allow_html=True,
