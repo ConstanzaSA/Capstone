@@ -10,17 +10,15 @@ import streamlit as st
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATOS_DIR = BASE_DIR / "datos"
-ARCHIVO_INTEGRANTES = DATOS_DIR / "integrantes.json"
-ARCHIVO_TAREAS = DATOS_DIR / "tareas.json"
-ARCHIVO_HISTORIAL = DATOS_DIR / "historial.json"
 
 ARCHIVOS = {
-    "integrantes": ARCHIVO_INTEGRANTES,
-    "tareas": ARCHIVO_TAREAS,
-    "historial": ARCHIVO_HISTORIAL,
+    "integrantes": DATOS_DIR / "integrantes.json",
+    "tareas": DATOS_DIR / "tareas.json",
+    "historial": DATOS_DIR / "historial.json",
+    "configuracion": DATOS_DIR / "configuracion.json",
 }
 
-DATOS_INICIALES = {
+DATOS_INICIALES: dict[str, Any] = {
     "integrantes": [
         {"id": "integrante_1", "nombre": "Integrante 1", "rol": "Mecánica"},
         {"id": "integrante_2", "nombre": "Integrante 2", "rol": "Electrónica"},
@@ -29,6 +27,10 @@ DATOS_INICIALES = {
     ],
     "tareas": [],
     "historial": [],
+    "configuracion": {
+        "nombre_proyecto": "Capstone Robótica",
+        "proxima_entrega": "",
+    },
 }
 
 
@@ -50,10 +52,6 @@ def _configuracion_github() -> dict[str, str] | None:
     }
 
 
-def modo_almacenamiento() -> str:
-    return "GitHub" if _configuracion_github() else "Local"
-
-
 def inicializar_datos() -> None:
     DATOS_DIR.mkdir(parents=True, exist_ok=True)
     for nombre, ruta in ARCHIVOS.items():
@@ -64,12 +62,12 @@ def inicializar_datos() -> None:
             )
 
 
-def _leer_local(nombre: str) -> list[dict[str, Any]]:
+def _leer_local(nombre: str) -> Any:
     inicializar_datos()
     return json.loads(ARCHIVOS[nombre].read_text(encoding="utf-8"))
 
 
-def _guardar_local(nombre: str, datos: list[dict[str, Any]]) -> None:
+def _guardar_local(nombre: str, datos: Any) -> None:
     ARCHIVOS[nombre].write_text(
         json.dumps(datos, ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -80,7 +78,7 @@ def _ruta_github(nombre: str, config: dict[str, str]) -> str:
     return f"{config['carpeta_datos'].strip('/')}/{nombre}.json"
 
 
-def _leer_github(nombre: str, config: dict[str, str]) -> tuple[list[dict[str, Any]], str]:
+def _leer_github(nombre: str, config: dict[str, str]) -> tuple[Any, str]:
     ruta = _ruta_github(nombre, config)
     url = f"https://api.github.com/repos/{config['repositorio']}/contents/{ruta}"
     respuesta = requests.get(
@@ -99,9 +97,8 @@ def _leer_github(nombre: str, config: dict[str, str]) -> tuple[list[dict[str, An
     return json.loads(texto), contenido["sha"]
 
 
-def _guardar_github(nombre: str, datos: list[dict[str, Any]], mensaje: str, config: dict[str, str]) -> None:
-    actuales, sha = _leer_github(nombre, config)
-    del actuales
+def _guardar_github(nombre: str, datos: Any, mensaje: str, config: dict[str, str]) -> None:
+    _, sha = _leer_github(nombre, config)
     ruta = _ruta_github(nombre, config)
     url = f"https://api.github.com/repos/{config['repositorio']}/contents/{ruta}"
     contenido = base64.b64encode(
@@ -125,18 +122,21 @@ def _guardar_github(nombre: str, datos: list[dict[str, Any]], mensaje: str, conf
     respuesta.raise_for_status()
 
 
-def cargar_datos(nombre: str) -> list[dict[str, Any]]:
+def cargar_datos(nombre: str) -> Any:
     config = _configuracion_github()
     if config:
         try:
             datos, _ = _leer_github(nombre, config)
             return datos
         except requests.RequestException as error:
-            st.warning(f"No se pudo leer {nombre}.json desde GitHub. Se usará la copia local. Detalle: {error}")
+            st.warning(
+                f"No se pudo leer {nombre}.json desde GitHub. "
+                f"Se usará la copia local. Detalle: {error}"
+            )
     return _leer_local(nombre)
 
 
-def guardar_datos(nombre: str, datos: list[dict[str, Any]], mensaje: str) -> None:
+def guardar_datos(nombre: str, datos: Any, mensaje: str) -> None:
     _guardar_local(nombre, datos)
     config = _configuracion_github()
     if config:
