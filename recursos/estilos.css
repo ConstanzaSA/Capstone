@@ -441,16 +441,21 @@ div[role="tooltip"] * {
     transition: none !important;
     animation-fill-mode: forwards !important;
 }
-/* Ícono de ayuda (?) */
-[data-testid="stTooltipIcon"] svg {
-    color: #eda0ca !important;
-    fill: #eda0ca !important;
-    stroke: #eda0ca !important;
-}
 
-/* Hover */
-[data-testid="stTooltipIcon"]:hover svg {
-    color: #ffffff !important;
-    fill: #ffffff !important;
-    stroke: #ffffff !important;
+
+
+
+
+
+
+
+
+
+
+/* Botón del tooltip */
+button[aria-label*="Help"] svg,
+button[aria-label*="help"] svg {
+    fill: #eda0ca !important;
+    color: #eda0ca !important;
+    stroke: #eda0ca !important;
 }
