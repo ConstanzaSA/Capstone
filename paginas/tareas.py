@@ -29,7 +29,7 @@ def convertir_fecha(valor: str) -> date:
         return date.today()
 
 
-with st.expander("➕ Añadir una tarea", expanded=True):
+with st.expander("+ Añadir una tarea", expanded=True):
     with st.form("formulario_nueva_tarea", clear_on_submit=True):
         titulo = st.text_input("Título de la tarea")
         descripcion = st.text_area("Descripción")
