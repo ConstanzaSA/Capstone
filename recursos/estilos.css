@@ -111,3 +111,57 @@ button[data-baseweb="tab"] span {
     background: #17131d;
     border-radius: 12px;
 }
+/* ==========================================================
+   MENÚ LATERAL
+   ========================================================== */
+
+/* Fondo completo de la barra lateral */
+[data-testid="stSidebar"] {
+    background: #17131d !important;
+}
+
+/* Pestañas normales */
+[data-testid="stSidebarNav"] a,
+a[data-testid="stSidebarNavLink"] {
+    background: transparent !important;
+    border-radius: 9px !important;
+    color: #ffffff !important;
+    transition:
+        background-color .18s ease,
+        color .18s ease,
+        transform .18s ease;
+}
+
+/* Texto de las pestañas */
+[data-testid="stSidebarNav"] a span,
+a[data-testid="stSidebarNavLink"] span {
+    color: #ffffff !important;
+}
+
+/* Pestaña seleccionada */
+[data-testid="stSidebarNav"] a[aria-current="page"],
+a[data-testid="stSidebarNavLink"][aria-current="page"] {
+    background: #5b3f7d !important;
+    color: #ffffff !important;
+}
+
+/* Texto de la pestaña seleccionada */
+[data-testid="stSidebarNav"] a[aria-current="page"] span,
+a[data-testid="stSidebarNavLink"][aria-current="page"] span {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+/* Al pasar el mouse */
+[data-testid="stSidebarNav"] a:hover,
+a[data-testid="stSidebarNavLink"]:hover {
+    background: #f2a6cf !important;
+    color: #2b1730 !important;
+    transform: translateX(3px);
+}
+
+/* Texto durante el hover */
+[data-testid="stSidebarNav"] a:hover span,
+a[data-testid="stSidebarNavLink"]:hover span {
+    color: #2b1730 !important;
+}
