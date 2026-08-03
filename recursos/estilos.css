@@ -1,167 +1,254 @@
-html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-    background: #0d0c12;
-    color: #ffffff;
+/* ==========================================================
+   OCULTAR BARRA SUPERIOR BLANCA DE STREAMLIT
+   ========================================================== */
+
+[data-testid="stHeader"] {
+    background: #0d0c12 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+[data-testid="stStatusWidget"] {
+    display: none !important;
+}
+
+#MainMenu {
+    visibility: hidden !important;
+}
+
+footer {
+    visibility: hidden !important;
 }
 
 .block-container {
-    max-width: 1280px;
-    padding-top: 1.2rem;
-    padding-bottom: 3rem;
+    padding-top: 1rem !important;
 }
 
-.encabezado-principal {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    padding: 1.4rem 1.8rem;
-    margin-bottom: 1.3rem;
-    border-radius: 22px;
-    background: linear-gradient(120deg, #32264f, #5b3f7d);
-    border: 1px solid rgba(255,255,255,.12);
+
+/* ==========================================================
+   COLORES GENERALES DE BOTONES
+   ========================================================== */
+
+:root {
+    --boton-morado: #5b3f7d;
+    --boton-morado-borde: #8462a5;
+    --boton-rosado: #eda0ca;
+    --boton-rosado-borde: #ffd1e8;
+    --texto-boton: #ffffff;
+    --texto-hover: #2b1730;
 }
 
-.encabezado-principal h1 { margin: 0; color: #ffffff !important; font-size: 2.25rem; }
-.encabezado-principal p { margin: .35rem 0 0; color: #f0e8f8 !important; }
-.icono-robot { font-size: 4rem; }
 
-.tarjeta-indicador {
-    min-height: 120px;
-    padding: 1rem 1.1rem;
-    border-radius: 16px;
-    background: #191620;
-    border: 1px solid rgba(177,145,205,.25);
-    border-left: 6px solid #a56ad1;
-}
+/* ==========================================================
+   TODOS LOS BOTONES DE STREAMLIT
+   ========================================================== */
 
-.indicador-titulo { color: #ffffff !important; text-transform: uppercase; font-size: .78rem; font-weight: 800; }
-.indicador-valor { color: #ffffff !important; font-size: 1.8rem; font-weight: 850; margin-top: .25rem; }
-.indicador-detalle { color: #e4d9ed !important; font-size: .8rem; margin-top: .25rem; }
-
-/* Títulos y etiquetas completamente blancos para mejorar la lectura. */
-h1, h2, h3, h4, h5, h6,
-[data-testid="stMarkdownContainer"] h1,
-[data-testid="stMarkdownContainer"] h2,
-[data-testid="stMarkdownContainer"] h3,
-[data-testid="stMarkdownContainer"] p,
-[data-testid="stWidgetLabel"] p,
-label, .stMarkdown, .stCaption {
-    color: #ffffff !important;
-}
-
-/* Texto secundario legible. */
-[data-testid="stCaptionContainer"] p,
-small {
-    color: #e8deef !important;
-}
-
-/* Entradas oscuras con texto claro. */
-input, textarea,
-[data-baseweb="select"] > div,
-[data-baseweb="input"] > div {
-    color: #ffffff !important;
-    background: #17131d !important;
-    border-color: rgba(255,255,255,.22) !important;
-}
-
-input::placeholder, textarea::placeholder {
-    color: #c8bdd0 !important;
-    opacity: 1;
-}
-
-/* Botones: morado normal y rosado claro al pasar el mouse. */
 .stButton > button,
 .stFormSubmitButton > button,
-.stDownloadButton > button {
+.stDownloadButton > button,
+.stLinkButton > a,
+button[kind="primary"],
+button[kind="secondary"] {
+    background: var(--boton-morado) !important;
+    border: 1px solid var(--boton-morado-borde) !important;
+    color: var(--texto-boton) !important;
     border-radius: 11px !important;
     font-weight: 750 !important;
-    transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+    box-shadow: none !important;
+
+    transition:
+        background-color .18s ease,
+        border-color .18s ease,
+        color .18s ease,
+        transform .18s ease !important;
 }
 
+
+/* Texto interno de todos los botones */
+.stButton > button p,
+.stButton > button span,
+.stFormSubmitButton > button p,
+.stFormSubmitButton > button span,
+.stDownloadButton > button p,
+.stDownloadButton > button span,
+.stLinkButton > a p,
+.stLinkButton > a span,
+button[kind="primary"] p,
+button[kind="primary"] span,
+button[kind="secondary"] p,
+button[kind="secondary"] span {
+    color: var(--texto-boton) !important;
+    font-weight: 750 !important;
+}
+
+
+/* Hover */
 .stButton > button:hover,
 .stFormSubmitButton > button:hover,
-.stDownloadButton > button:hover {
-    background: #f2a6cf !important;
-    border-color: #ffd0e8 !important;
-    color: #2b1730 !important;
+.stDownloadButton > button:hover,
+.stLinkButton > a:hover,
+button[kind="primary"]:hover,
+button[kind="secondary"]:hover {
+    background: var(--boton-rosado) !important;
+    border-color: var(--boton-rosado-borde) !important;
+    color: var(--texto-hover) !important;
     transform: translateY(-1px);
 }
 
-/* Expander: evita el hover gris y usa rosado suave. */
-[data-testid="stExpander"] summary:hover,
-[data-testid="stExpander"] summary:focus-visible {
-    background: rgba(242,166,207,.18) !important;
-    color: #ffffff !important;
+
+/* Texto durante hover */
+.stButton > button:hover p,
+.stButton > button:hover span,
+.stFormSubmitButton > button:hover p,
+.stFormSubmitButton > button:hover span,
+.stDownloadButton > button:hover p,
+.stDownloadButton > button:hover span,
+.stLinkButton > a:hover p,
+.stLinkButton > a:hover span,
+button[kind="primary"]:hover p,
+button[kind="primary"]:hover span,
+button[kind="secondary"]:hover p,
+button[kind="secondary"]:hover span {
+    color: var(--texto-hover) !important;
 }
 
-[data-testid="stExpander"] summary:hover p,
-[data-testid="stExpander"] summary:hover span {
-    color: #ffffff !important;
+
+/* Estado presionado */
+.stButton > button:active,
+.stFormSubmitButton > button:active,
+.stDownloadButton > button:active,
+.stLinkButton > a:active,
+button[kind="primary"]:active,
+button[kind="secondary"]:active {
+    background: var(--boton-rosado) !important;
+    border-color: var(--boton-rosado-borde) !important;
+    color: var(--texto-hover) !important;
+    transform: translateY(0);
 }
 
-/* Pestañas más visibles. */
-button[data-baseweb="tab"] p,
-button[data-baseweb="tab"] span {
-    color: #ffffff !important;
-    font-weight: 750 !important;
+
+/* Estado con foco */
+.stButton > button:focus,
+.stButton > button:focus-visible,
+.stFormSubmitButton > button:focus,
+.stFormSubmitButton > button:focus-visible,
+.stDownloadButton > button:focus,
+.stDownloadButton > button:focus-visible {
+    background: var(--boton-rosado) !important;
+    border-color: var(--boton-rosado-borde) !important;
+    color: var(--texto-hover) !important;
+    box-shadow: 0 0 0 2px rgba(237, 160, 202, .25) !important;
 }
 
-/* Fondo oscuro para Plotly antes de que termine de cargar. */
-[data-testid="stPlotlyChart"] {
-    background: #17131d;
-    border-radius: 12px;
-}
+
 /* ==========================================================
-   MENÚ LATERAL
+   EXPANDER: AÑADIR UNA TAREA
    ========================================================== */
 
-/* Fondo completo de la barra lateral */
+[data-testid="stExpander"] {
+    border-color: rgba(132, 98, 165, .35) !important;
+    background: transparent !important;
+}
+
+[data-testid="stExpander"] summary {
+    background: #3a2939 !important;
+    border-radius: 11px !important;
+    color: #ffffff !important;
+
+    transition:
+        background-color .18s ease,
+        color .18s ease !important;
+}
+
+
+/* Texto e iconos del expander */
+[data-testid="stExpander"] summary p,
+[data-testid="stExpander"] summary span,
+[data-testid="stExpander"] summary svg {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+
+/* Hover del expander */
+[data-testid="stExpander"] summary:hover,
+[data-testid="stExpander"] summary:focus-visible {
+    background: var(--boton-rosado) !important;
+    color: var(--texto-hover) !important;
+}
+
+
+/* Texto e iconos en hover */
+[data-testid="stExpander"] summary:hover p,
+[data-testid="stExpander"] summary:hover span,
+[data-testid="stExpander"] summary:hover svg,
+[data-testid="stExpander"] summary:focus-visible p,
+[data-testid="stExpander"] summary:focus-visible span,
+[data-testid="stExpander"] summary:focus-visible svg {
+    color: var(--texto-hover) !important;
+    fill: var(--texto-hover) !important;
+}
+
+
+/* ==========================================================
+   NAVEGACIÓN LATERAL
+   ========================================================== */
+
 [data-testid="stSidebar"] {
     background: #17131d !important;
 }
 
-/* Pestañas normales */
 [data-testid="stSidebarNav"] a,
 a[data-testid="stSidebarNavLink"] {
     background: transparent !important;
     border-radius: 9px !important;
     color: #ffffff !important;
+
     transition:
         background-color .18s ease,
         color .18s ease,
-        transform .18s ease;
+        transform .18s ease !important;
 }
 
-/* Texto de las pestañas */
 [data-testid="stSidebarNav"] a span,
 a[data-testid="stSidebarNavLink"] span {
     color: #ffffff !important;
 }
 
-/* Pestaña seleccionada */
+
+/* Página seleccionada */
 [data-testid="stSidebarNav"] a[aria-current="page"],
 a[data-testid="stSidebarNavLink"][aria-current="page"] {
-    background: #5b3f7d !important;
+    background: var(--boton-morado) !important;
     color: #ffffff !important;
 }
 
-/* Texto de la pestaña seleccionada */
 [data-testid="stSidebarNav"] a[aria-current="page"] span,
 a[data-testid="stSidebarNavLink"][aria-current="page"] span {
     color: #ffffff !important;
     font-weight: 800 !important;
 }
 
-/* Al pasar el mouse */
+
+/* Hover del menú */
 [data-testid="stSidebarNav"] a:hover,
 a[data-testid="stSidebarNavLink"]:hover {
-    background: #f2a6cf !important;
-    color: #2b1730 !important;
+    background: var(--boton-rosado) !important;
+    color: var(--texto-hover) !important;
     transform: translateX(3px);
 }
 
-/* Texto durante el hover */
 [data-testid="stSidebarNav"] a:hover span,
 a[data-testid="stSidebarNavLink"]:hover span {
-    color: #2b1730 !important;
+    color: var(--texto-hover) !important;
 }
