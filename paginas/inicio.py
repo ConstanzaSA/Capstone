@@ -38,7 +38,7 @@ with columnas[1]:
 with columnas[2]:
     tarjeta_indicador("Avance global", f"{avance_global}%", "Porcentaje del proyecto")
 with columnas[3]:
-    tarjeta_indicador("Próxima entrega", proxima_entrega, "Define en Configuración")
+    tarjeta_indicador("Próxima entrega", proxima_entrega, "Define en Proyecto")
 
 st.subheader("Progreso por integrante")
 df = pd.DataFrame(resumen)
