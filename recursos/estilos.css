@@ -355,7 +355,7 @@ a[data-testid="stSidebarNavLink"]:hover span {
 
 button[data-baseweb="tab"] p,
 button[data-baseweb="tab"] span {
-    color: #ffffff !important;
+    color: #000000 !important;
     font-weight: 750 !important;
 }
 
@@ -370,7 +370,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 }
 
 [data-testid="stAlert"] {
-    background: #6586db !important;
+    background: #171f34 !important;
     color: #ffffff !important;
 }
 
