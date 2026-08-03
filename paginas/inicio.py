@@ -36,7 +36,7 @@ with columnas[0]:
 with columnas[1]:
     tarjeta_indicador("Completadas", str(completadas), "Actividades terminadas")
 with columnas[2]:
-    tarjeta_indicador("Avance global", f"{avance_global}%", "Promedio del proyecto")
+    tarjeta_indicador("Avance global", f"{avance_global}%", "Porcentaje del proyecto")
 with columnas[3]:
     tarjeta_indicador("Próxima entrega", proxima_entrega, "Editable en Configuración")
 
