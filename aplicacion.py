@@ -21,7 +21,7 @@ inicializar_datos()
 
 PAGINAS = [
     st.Page(str(CARPETA_PROYECTO / "paginas" / "inicio.py"), title="Inicio", default=True),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "tareas.py"), title="Tareas",)
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "tareas.py"), title="Tareas"),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "integrantes.py"), title="Integrantes"),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "configuracion.py"), title="Proyecto"),
 ]
