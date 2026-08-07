@@ -1,160 +1,78 @@
 from __future__ import annotations
-
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
+from servicios.almacenamiento import cargar_filas,insertar_fila,actualizar_fila,eliminar_fila,obtener_fila
 
-from servicios.almacenamiento import cargar_datos, guardar_datos
+def ahora()->str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
+def obtener_integrantes()->list[dict[str,Any]]:
+    return cargar_filas("integrantes","nombre")
 
-def ahora() -> str:
-    return datetime.now().isoformat(timespec="seconds")
+def guardar_integrantes(integrantes:list[dict[str,Any]])->None:
+    for i in integrantes:
+        actualizar_fila("integrantes","id",i["id"],{"nombre":i.get("nombre","").strip(),"rol":i.get("rol","").strip(),"fecha_actualizacion":ahora()})
+    registrar_evento("Perfil",None,"Integrantes","Se actualizaron los datos de un integrante.")
 
-
-def obtener_integrantes() -> list[dict[str, Any]]:
-    return cargar_datos("integrantes")
-
-
-def guardar_integrantes(integrantes: list[dict[str, Any]]) -> None:
-    guardar_datos("integrantes", integrantes, "Actualiza integrantes del equipo")
-
-
-def obtener_tareas() -> list[dict[str, Any]]:
-    tareas = cargar_datos("tareas")
-    # Compatibilidad con tareas creadas por la versión anterior.
-    for tarea in tareas:
-        tarea.setdefault("responsable_id", None)
-        tarea.setdefault("fecha_entrega", "")
-        if not tarea["fecha_entrega"] and tarea.get("semana"):
-            tarea["fecha_entrega"] = tarea["semana"]
+def obtener_tareas()->list[dict[str,Any]]:
+    tareas=cargar_filas("tareas","fecha_entrega")
+    for t in tareas:
+        t.setdefault("responsable_id",None); t.setdefault("fecha_entrega","")
+        t.setdefault("prioridad","Baja"); t.setdefault("estado","Pendiente"); t.setdefault("avance",0)
     return tareas
 
+def obtener_historial()->list[dict[str,Any]]:
+    return cargar_filas("historial","fecha")
 
-def obtener_historial() -> list[dict[str, Any]]:
-    return cargar_datos("historial")
+def obtener_configuracion()->dict[str,Any]:
+    c={"nombre_proyecto":"Capstone Robótica","proxima_entrega":""}
+    for f in cargar_filas("configuracion"):
+        if f.get("clave") in c: c[f["clave"]]=f.get("valor") or ""
+    return c
 
+def guardar_configuracion(configuracion:dict[str,Any])->None:
+    for clave in ("nombre_proyecto","proxima_entrega"):
+        valor=configuracion.get(clave,"")
+        existente=obtener_fila("configuracion","clave",clave)
+        if existente:
+            actualizar_fila("configuracion","clave",clave,{"valor":valor,"fecha_actualizacion":ahora()})
+        else:
+            insertar_fila("configuracion",{"clave":clave,"valor":valor,"fecha_actualizacion":ahora()})
+    registrar_evento("Configuración",None,"Proyecto","Se actualizó la configuración general.")
 
-def obtener_configuracion() -> dict[str, Any]:
-    configuracion = cargar_datos("configuracion")
-    configuracion.setdefault("nombre_proyecto", "Capstone Robótica")
-    configuracion.setdefault("proxima_entrega", "")
-    return configuracion
+def registrar_evento(accion:str,tarea_id:str|None,tarea:str,detalle:str)->None:
+    insertar_fila("historial",{"id":uuid4().hex,"fecha":ahora(),"accion":accion,"tarea_id":tarea_id,"tarea":tarea,"detalle":detalle})
 
+def crear_tarea(titulo:str,descripcion:str,responsable_id:str|None,fecha_entrega:str,prioridad:str)->None:
+    t=insertar_fila("tareas",{"id":uuid4().hex,"titulo":titulo.strip(),"descripcion":descripcion.strip(),"responsable_id":responsable_id,"fecha_entrega":fecha_entrega,"prioridad":prioridad,"estado":"Pendiente","avance":0,"fecha_creacion":ahora(),"fecha_actualizacion":ahora()})
+    registrar_evento("Creación",t["id"],t["titulo"],f"Responsable: {responsable_id or 'Sin asignar'}")
 
-def guardar_configuracion(configuracion: dict[str, Any]) -> None:
-    guardar_datos("configuracion", configuracion, "Actualiza configuración del proyecto")
+def actualizar_tarea(tarea_id:str,estado:str,avance:int,responsable_id:str|None,fecha_entrega:str)->None:
+    t=obtener_fila("tareas","id",tarea_id)
+    if not t: raise RuntimeError("No se encontró la tarea.")
+    ant_resp=t.get("responsable_id"); ant_estado=t.get("estado"); ant_avance=int(t.get("avance") or 0); ant_fecha=t.get("fecha_entrega") or ""
+    avance=max(0,min(100,int(avance)))
+    if estado=="Completada": avance=100
+    elif avance==100: estado="Completada"
+    actual=actualizar_fila("tareas","id",tarea_id,{"responsable_id":responsable_id,"fecha_entrega":fecha_entrega,"estado":estado,"avance":avance,"fecha_actualizacion":ahora()})
+    cambios=[]
+    if ant_resp!=responsable_id: cambios.append(f"Responsable: {ant_resp or 'Sin asignar'} → {responsable_id or 'Sin asignar'}")
+    if ant_fecha!=fecha_entrega: cambios.append(f"Fecha de entrega: {ant_fecha or 'Sin fecha'} → {fecha_entrega or 'Sin fecha'}")
+    if ant_estado!=actual["estado"]: cambios.append(f"Estado: {ant_estado} → {actual['estado']}")
+    if ant_avance!=actual["avance"]: cambios.append(f"Avance: {ant_avance}% → {actual['avance']}%")
+    registrar_evento("Actualización",tarea_id,actual["titulo"],"; ".join(cambios) or "Sin cambios")
 
+def eliminar_tarea(tarea_id:str)->None:
+    t=obtener_fila("tareas","id",tarea_id)
+    if not t: return
+    eliminar_fila("tareas","id",tarea_id)
+    registrar_evento("Eliminación",tarea_id,t["titulo"],"Tarea eliminada. El historial se conserva.")
 
-def _registrar_historial(accion: str, tarea: dict[str, Any], detalle: str) -> None:
-    historial = obtener_historial()
-    historial.insert(
-        0,
-        {
-            "fecha": ahora(),
-            "accion": accion,
-            "tarea_id": tarea["id"],
-            "tarea": tarea["titulo"],
-            "detalle": detalle,
-        },
-    )
-    guardar_datos("historial", historial[:500], f"Registra historial: {accion}")
-
-
-def crear_tarea(
-    titulo: str,
-    descripcion: str,
-    responsable_id: str | None,
-    fecha_entrega: str,
-    prioridad: str,
-) -> None:
-    tareas = obtener_tareas()
-    tarea = {
-        "id": uuid4().hex,
-        "titulo": titulo.strip(),
-        "descripcion": descripcion.strip(),
-        "responsable_id": responsable_id,
-        "fecha_entrega": fecha_entrega,
-        "prioridad": prioridad,
-        "estado": "Pendiente",
-        "avance": 0,
-        "fecha_creacion": ahora(),
-        "fecha_actualizacion": ahora(),
-    }
-    tareas.append(tarea)
-    guardar_datos("tareas", tareas, f"Crea tarea: {tarea['titulo']}")
-    asignacion = responsable_id or "Sin asignar"
-    _registrar_historial("Creación", tarea, f"Responsable: {asignacion}")
-
-
-def actualizar_tarea(
-    tarea_id: str,
-    estado: str,
-    avance: int,
-    responsable_id: str | None,
-    fecha_entrega: str,
-) -> None:
-    tareas = obtener_tareas()
-    tarea = next(t for t in tareas if t["id"] == tarea_id)
-    responsable_anterior = tarea.get("responsable_id")
-    estado_anterior = tarea["estado"]
-    avance_anterior = tarea["avance"]
-    entrega_anterior = tarea.get("fecha_entrega", "")
-
-    tarea["responsable_id"] = responsable_id
-    tarea["fecha_entrega"] = fecha_entrega
-    tarea["estado"] = estado
-    tarea["avance"] = max(0, min(100, int(avance)))
-
-    if estado == "Completada":
-        tarea["avance"] = 100
-    elif tarea["avance"] == 100:
-        tarea["estado"] = "Completada"
-
-    tarea["fecha_actualizacion"] = ahora()
-    tarea.pop("semana", None)
-    guardar_datos("tareas", tareas, f"Actualiza tarea: {tarea['titulo']}")
-
-    cambios = []
-    if responsable_anterior != responsable_id:
-        cambios.append(
-            f"Responsable: {responsable_anterior or 'Sin asignar'} → "
-            f"{responsable_id or 'Sin asignar'}"
-        )
-    if entrega_anterior != fecha_entrega:
-        cambios.append(f"Fecha de entrega: {entrega_anterior or 'Sin fecha'} → {fecha_entrega}")
-    if estado_anterior != tarea["estado"]:
-        cambios.append(f"Estado: {estado_anterior} → {tarea['estado']}")
-    if avance_anterior != tarea["avance"]:
-        cambios.append(f"Avance: {avance_anterior}% → {tarea['avance']}%")
-    _registrar_historial("Actualización", tarea, "; ".join(cambios) or "Sin cambios")
-
-
-def eliminar_tarea(tarea_id: str) -> None:
-    tareas = obtener_tareas()
-    tarea = next(t for t in tareas if t["id"] == tarea_id)
-    tareas = [t for t in tareas if t["id"] != tarea_id]
-    guardar_datos("tareas", tareas, f"Elimina tarea: {tarea['titulo']}")
-    _registrar_historial("Eliminación", tarea, "Tarea eliminada")
-
-
-def avance_por_integrante() -> list[dict[str, Any]]:
-    integrantes = obtener_integrantes()
-    tareas = obtener_tareas()
-    resultado = []
-    for integrante in integrantes:
-        asignadas = [t for t in tareas if t.get("responsable_id") == integrante["id"]]
-        promedio = (
-            round(sum(t["avance"] for t in asignadas) / len(asignadas), 1)
-            if asignadas
-            else 0
-        )
-        resultado.append(
-            {
-                "Integrante": integrante["nombre"],
-                "Rol": integrante["rol"],
-                "Tareas": len(asignadas),
-                "Completadas": sum(t["estado"] == "Completada" for t in asignadas),
-                "Avance (%)": promedio,
-            }
-        )
+def avance_por_integrante()->list[dict[str,Any]]:
+    tareas=obtener_tareas(); resultado=[]
+    for i in obtener_integrantes():
+        asignadas=[t for t in tareas if t.get("responsable_id")==i["id"]]
+        promedio=round(sum(int(t.get("avance") or 0) for t in asignadas)/len(asignadas),1) if asignadas else 0
+        resultado.append({"Integrante":i["nombre"],"Rol":i.get("rol",""),"Tareas":len(asignadas),"Completadas":sum(t.get("estado")=="Completada" for t in asignadas),"Avance (%)":promedio})
     return resultado
