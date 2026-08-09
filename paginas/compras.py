@@ -105,11 +105,14 @@ with st.expander(
         # LINK
         # --------------------------------------------------
 
-        link = st.text_input(
-            "🔗 Link del producto",
-            placeholder="https://...",
-        )
-
+        link = st.text_area(
+        "Observaciones",
+        placeholder=(
+            "Pega aquí el link del producto u otra información "
+            "importante sobre la compra."
+        ),
+        height=80,
+    )
         # --------------------------------------------------
         # COMPRADOR
         # --------------------------------------------------
@@ -327,14 +330,14 @@ with st.expander(
             # LINK
             # --------------------------------------------------
 
-            nuevo_link = st.text_input(
-                "🔗 Link del producto",
+            nuevo_link = st.text_area(
+                "Observaciones",
                 value=compra.get(
                     "link",
                     "",
                 ),
+                height=80,
             )
-
             # --------------------------------------------------
             # COMPRADOR
             # --------------------------------------------------
@@ -537,10 +540,6 @@ if not compras:
 
 else:
 
-    # ======================================================
-    # TABLA
-    # ======================================================
-
     datos_tabla = []
 
     for compra in compras:
@@ -558,32 +557,52 @@ else:
             else "Sin Definir"
         )
 
+        estado = compra.get(
+            "estado",
+            "Sin comprar",
+        )
+
+        # Mostrar el estado de forma visual
+        if estado == "Comprado":
+
+            estado_mostrar = (
+                "🟢 Comprado"
+            )
+
+        else:
+
+            estado_mostrar = (
+                "🟡 Sin comprar"
+            )
+
         datos_tabla.append(
             {
                 "Nombre": compra.get(
                     "nombre_compra",
                     "",
                 ),
+
                 "Precio": (
                     f"${float(
                         compra.get(
-                            'precio',
+                            "precio",
                             0,
                         )
                     ):,.0f}"
                 ),
+
                 "Cantidad": compra.get(
                     "cantidad",
                     0,
                 ),
-                "Estado": compra.get(
-                    "estado",
-                    "Sin comprar",
-                ),
-                "Link": (
-                    "🔗 Ver producto"
-                    if compra.get("link")
-                    else ""
+
+                "Estado": estado_mostrar,
+
+                "Comprador": comprador_nombre,
+
+                "Observaciones": compra.get(
+                    "link",
+                    "",
                 ),
             }
         )
@@ -592,10 +611,4 @@ else:
         datos_tabla,
         use_container_width=True,
         hide_index=True,
-        column_config={
-            "Link": st.column_config.LinkColumn(
-                "Link",
-                display_text="🔗 Ver producto",
-            ),
-        },
     )
