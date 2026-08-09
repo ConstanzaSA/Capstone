@@ -13,7 +13,22 @@ def obtener_cliente_supabase() -> Client:
     return create_client(url,key)
 
 def inicializar_datos() -> None:
-    obtener_cliente_supabase().table("configuracion").select("clave").limit(1).execute()
+    try:
+        respuesta = (
+            obtener_cliente_supabase()
+            .table("configuracion")
+            .select("clave")
+            .limit(1)
+            .execute()
+        )
+
+        print("CONEXIÓN SUPABASE OK")
+        print("DATOS:", respuesta.data)
+
+    except Exception as error:
+        raise RuntimeError(
+            f"ERROR REAL DE SUPABASE: {error}"
+        ) from error
 
 def cargar_filas(tabla:str, orden:str|None=None)->list[dict[str,Any]]:
     q=obtener_cliente_supabase().table(tabla).select("*")
