@@ -15,12 +15,6 @@ def obtener_cliente_supabase() -> Client:
 def inicializar_datos() -> None:
     obtener_cliente_supabase().table("configuracion").select("clave").limit(1).execute()
 
-    except Exception as error:
-        st.error("No se pudo consultar la tabla configuracion.")
-        st.write("Tipo de error:", type(error).__name__)
-        st.write("Detalles:", str(error))
-        st.stop()
-
 def cargar_filas(tabla:str, orden:str|None=None)->list[dict[str,Any]]:
     q=obtener_cliente_supabase().table(tabla).select("*")
     if orden: q=q.order(orden,desc=True)
