@@ -1,23 +1,28 @@
 from __future__ import annotations
 
-from servicios.almacenamiento import supabase
+from typing import Any
+from uuid import uuid4
+
+from servicios.almacenamiento import (
+    cargar_filas,
+    insertar_fila,
+    actualizar_fila,
+    eliminar_fila,
+)
 
 
 # ==========================================================
-# OBTENER COMPRAS
+# COMPRAS
 # ==========================================================
 
-def obtener_compras():
-
-    respuesta = (
-        supabase
-        .table("compras")
-        .select("*")
-        .order("id", desc=True)
-        .execute()
+def obtener_compras() -> list[dict[str, Any]]:
+    """
+    Obtiene todas las compras registradas.
+    """
+    return cargar_filas(
+        "compras",
+        "nombre_compra",
     )
-
-    return respuesta.data or []
 
 
 # ==========================================================
@@ -25,29 +30,44 @@ def obtener_compras():
 # ==========================================================
 
 def crear_compra(
-    nombre_compra,
-    cantidad,
-    link,
-    precio,
-):
+    nombre_compra: str,
+    cantidad: float,
+    link: str,
+    precio: float,
+) -> None:
+    """
+    Crea una nueva compra pendiente.
+    """
 
-    datos = {
-        "nombre_compra": nombre_compra.strip(),
-        "cantidad": cantidad,
-        "link": link.strip(),
-        "precio": precio,
-        "comprador": None,
-        "estado": "Sin comprar",
-    }
+    nombre_compra = nombre_compra.strip()
 
-    respuesta = (
-        supabase
-        .table("compras")
-        .insert(datos)
-        .execute()
+    if not nombre_compra:
+        raise ValueError(
+            "El nombre de la compra es obligatorio."
+        )
+
+    if cantidad <= 0:
+        raise ValueError(
+            "La cantidad debe ser mayor que 0."
+        )
+
+    if precio < 0:
+        raise ValueError(
+            "El precio no puede ser negativo."
+        )
+
+    insertar_fila(
+        "compras",
+        {
+            "id": uuid4().hex,
+            "nombre_compra": nombre_compra,
+            "cantidad": cantidad,
+            "link": link.strip(),
+            "precio": precio,
+            "comprador": None,
+            "estado": "Sin comprar",
+        },
     )
-
-    return respuesta.data
 
 
 # ==========================================================
@@ -55,24 +75,45 @@ def crear_compra(
 # ==========================================================
 
 def marcar_comprado(
-    compra_id,
-    comprador,
-):
+    compra_id: str,
+    comprador: str,
+) -> None:
+    """
+    Marca una compra como comprada y registra
+    quién la pagó.
+    """
 
-    datos = {
-        "comprador": comprador,
-        "estado": "Comprado",
-    }
-
-    respuesta = (
-        supabase
-        .table("compras")
-        .update(datos)
-        .eq("id", compra_id)
-        .execute()
+    actualizar_fila(
+        "compras",
+        "id",
+        compra_id,
+        {
+            "comprador": comprador,
+            "estado": "Comprado",
+        },
     )
 
-    return respuesta.data
+
+# ==========================================================
+# VOLVER A SIN COMPRAR
+# ==========================================================
+
+def marcar_sin_comprar(
+    compra_id: str,
+) -> None:
+    """
+    Devuelve una compra al estado 'Sin comprar'.
+    """
+
+    actualizar_fila(
+        "compras",
+        "id",
+        compra_id,
+        {
+            "comprador": None,
+            "estado": "Sin comprar",
+        },
+    )
 
 
 # ==========================================================
@@ -80,53 +121,44 @@ def marcar_comprado(
 # ==========================================================
 
 def actualizar_compra(
-    compra_id,
-    nombre_compra,
-    cantidad,
-    link,
-    precio,
-):
+    compra_id: str,
+    nombre_compra: str,
+    cantidad: float,
+    link: str,
+    precio: float,
+) -> None:
+    """
+    Actualiza los datos de una compra.
+    """
 
-    datos = {
-        "nombre_compra": nombre_compra.strip(),
-        "cantidad": cantidad,
-        "link": link.strip(),
-        "precio": precio,
-    }
+    nombre_compra = nombre_compra.strip()
 
-    respuesta = (
-        supabase
-        .table("compras")
-        .update(datos)
-        .eq("id", compra_id)
-        .execute()
+    if not nombre_compra:
+        raise ValueError(
+            "El nombre de la compra es obligatorio."
+        )
+
+    if cantidad <= 0:
+        raise ValueError(
+            "La cantidad debe ser mayor que 0."
+        )
+
+    if precio < 0:
+        raise ValueError(
+            "El precio no puede ser negativo."
+        )
+
+    actualizar_fila(
+        "compras",
+        "id",
+        compra_id,
+        {
+            "nombre_compra": nombre_compra,
+            "cantidad": cantidad,
+            "link": link.strip(),
+            "precio": precio,
+        },
     )
-
-    return respuesta.data
-
-
-# ==========================================================
-# VOLVER A "SIN COMPRAR"
-# ==========================================================
-
-def marcar_sin_comprar(
-    compra_id,
-):
-
-    datos = {
-        "comprador": None,
-        "estado": "Sin comprar",
-    }
-
-    respuesta = (
-        supabase
-        .table("compras")
-        .update(datos)
-        .eq("id", compra_id)
-        .execute()
-    )
-
-    return respuesta.data
 
 
 # ==========================================================
@@ -134,15 +166,14 @@ def marcar_sin_comprar(
 # ==========================================================
 
 def eliminar_compra(
-    compra_id,
-):
+    compra_id: str,
+) -> None:
+    """
+    Elimina una compra.
+    """
 
-    respuesta = (
-        supabase
-        .table("compras")
-        .delete()
-        .eq("id", compra_id)
-        .execute()
+    eliminar_fila(
+        "compras",
+        "id",
+        compra_id,
     )
-
-    return respuesta.data
