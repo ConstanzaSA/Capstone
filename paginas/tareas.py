@@ -90,57 +90,131 @@ with st.expander(
         "formulario_nueva_tarea",
         clear_on_submit=True,
     ):
-        titulo = st.text_input("Título de la tarea")
-        descripcion = st.text_area("Descripción")
+        # ==================================================
+        # TÍTULO
+        # ==================================================
+
+        titulo = st.text_input(
+            "Título de la tarea",
+            placeholder="Ej.: Diseñar soporte del motor",
+        )
+
+        # ==================================================
+        # RESPONSABLES Y FECHA
+        # ==================================================
 
         col1, col2 = st.columns(2)
 
-        responsables = col1.multiselect(
-            "Responsables",
-            options=ids_integrantes,
-            format_func=lambda x: nombres[x],
-            help=(
-                "Selecciona uno, varios o ninguno. "
-                "Cada responsable tendrá su propio avance."
-            ),
-        )
+        with col1:
+            responsables = st.multiselect(
+                "Responsables",
+                options=ids_integrantes,
+                format_func=lambda x: nombres[x],
+                help=(
+                    "Puedes seleccionar uno, varios o ninguno. "
+                    "Cada responsable tendrá su propio checklist "
+                    "y avance individual."
+                ),
+            )
 
-        fecha_entrega = col2.date_input(
-            "Fecha de entrega",
-            value=None,
-            format="DD/MM/YYYY",
-            help="Día exacto en que la tarea debe estar lista.",
-        )
+        with col2:
+            fecha_entrega = st.date_input(
+                "Fecha de entrega",
+                value=None,
+                format="DD/MM/YYYY",
+                help="Día exacto en que la tarea debe estar lista.",
+            )
+
+        # ==================================================
+        # PRIORIDAD
+        # ==================================================
 
         prioridad = st.selectbox(
             "Prioridad",
             ["Baja", "Media", "Alta"],
         )
 
-        st.markdown("**Checklist inicial**")
+        # ==================================================
+        # CHECKLIST
+        # ==================================================
+
+        st.markdown("### Checklist")
+
         st.caption(
-            "Las casillas serán la base para calcular "
-            "el avance individual de cada responsable."
+            "Añade las etapas que deberán completar los "
+            "responsables. El avance se calculará "
+            "automáticamente a partir de estas casillas."
         )
 
-        cantidad_subtareas = st.number_input(
-            "Número de casillas",
-            min_value=0,
-            max_value=20,
-            value=0,
-            step=1,
-        )
+        # Número de casillas que se están mostrando.
+        if "nueva_tarea_checklist_cantidad" not in st.session_state:
+            st.session_state.nueva_tarea_checklist_cantidad = 1
+
+        cantidad = st.session_state.nueva_tarea_checklist_cantidad
 
         subtareas_nuevas = []
 
-        for i in range(int(cantidad_subtareas)):
-            subtareas_nuevas.append(
-                st.text_input(
-                    f"Casilla {i + 1}",
-                    key=f"nueva_sub_{i}",
+        for i in range(cantidad):
+
+            col_check, col_delete = st.columns([10, 1])
+
+            with col_check:
+                texto = st.text_input(
+                    f"Checklist {i + 1}",
+                    key=f"nueva_tarea_check_{i}",
+                    label_visibility="collapsed",
                     placeholder="Ej.: Comprar material",
                 )
-            )
+
+                subtareas_nuevas.append(texto)
+
+            with col_delete:
+                eliminar = st.form_submit_button(
+                    "🗑",
+                    key=f"eliminar_check_{i}",
+                )
+
+                if eliminar:
+                    # Eliminar esta casilla desplazando
+                    # las siguientes hacia arriba.
+                    for j in range(i, cantidad - 1):
+                        anterior = st.session_state.get(
+                            f"nueva_tarea_check_{j + 1}",
+                            "",
+                        )
+
+                        st.session_state[
+                            f"nueva_tarea_check_{j}"
+                        ] = anterior
+
+                    st.session_state.pop(
+                        f"nueva_tarea_check_{cantidad - 1}",
+                        None,
+                    )
+
+                    st.session_state.nueva_tarea_checklist_cantidad = max(
+                        0,
+                        cantidad - 1,
+                    )
+
+                    st.rerun()
+
+        # ==================================================
+        # BOTÓN AÑADIR CHECKLIST
+        # ==================================================
+
+        agregar_checklist = st.form_submit_button(
+            "＋ Añadir checklist",
+            use_container_width=True,
+        )
+
+        if agregar_checklist:
+            st.session_state.nueva_tarea_checklist_cantidad += 1
+            st.rerun()
+
+        # ==================================================
+        # CREAR TAREA
+        # ==================================================
 
         enviar = st.form_submit_button(
             "Crear tarea",
@@ -149,26 +223,53 @@ with st.expander(
         )
 
         if enviar:
+
+            # Eliminamos casillas vacías.
+            subtareas_nuevas = [
+                texto.strip()
+                for texto in subtareas_nuevas
+                if texto.strip()
+            ]
+
             if not titulo.strip():
+
                 st.error(
                     "El título de la tarea es obligatorio."
                 )
+
             else:
+
                 crear_tarea(
-                    titulo=titulo,
-                    descripcion=descripcion,
+                    titulo=titulo.strip(),
+
+                    # Ya no utilizamos descripción.
+                    descripcion="",
+
                     responsables_ids=responsables,
+
                     fecha_entrega=(
                         fecha_entrega.isoformat()
                         if fecha_entrega
                         else None
                     ),
+
                     prioridad=prioridad,
+
                     subtareas=subtareas_nuevas,
                 )
+
+                # Reiniciar el editor de checklist
+                # después de crear la tarea.
+                st.session_state.nueva_tarea_checklist_cantidad = 1
+
+                for key in list(st.session_state.keys()):
+                    if key.startswith("nueva_tarea_check_"):
+                        del st.session_state[key]
+
                 st.success(
                     "Tarea creada correctamente."
                 )
+
                 st.rerun()
 
 
