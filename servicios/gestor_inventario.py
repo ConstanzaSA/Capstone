@@ -9,7 +9,6 @@ from servicios.almacenamiento import (
     cargar_filas,
     eliminar_fila,
     insertar_fila,
-    obtener_fila,
 )
 
 
@@ -17,27 +16,51 @@ def ahora() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+# ==========================================================
+# INVENTARIO
+# ==========================================================
+
 def obtener_inventario() -> list[dict[str, Any]]:
+    """
+    Obtiene todos los materiales registrados.
+    Se ordenan alfabéticamente por material.
+    """
     return cargar_filas("inventario", "material")
+
+
+def obtener_integrantes() -> list[dict[str, Any]]:
+    """
+    Obtiene los integrantes disponibles para asignar
+    como responsables/dueños de un material.
+    """
+    return cargar_filas("integrantes", "nombre")
 
 
 def crear_material(
     material: str,
-    cantidad: float,
+    responsable_id: str | None,
     unidad: str,
     disponible: bool,
     observaciones: str,
 ) -> None:
+    """
+    Crea un nuevo material en el inventario.
+    """
+
     material = material.strip()
+
     if not material:
-        raise ValueError("El nombre del material es obligatorio.")
+        raise ValueError(
+            "El nombre del material es obligatorio."
+        )
 
     insertar_fila(
         "inventario",
         {
             "id": uuid4().hex,
             "material": material,
-            "cantidad": cantidad,
+            "responsable_id": responsable_id,
+            "cantidad": 0,
             "unidad": unidad.strip(),
             "disponible": disponible,
             "observaciones": observaciones.strip(),
@@ -49,18 +72,29 @@ def crear_material(
 def actualizar_material(
     material_id: str,
     material: str,
-    cantidad: float,
+    responsable_id: str | None,
     unidad: str,
     disponible: bool,
     observaciones: str,
 ) -> None:
+    """
+    Actualiza un material existente.
+    """
+
+    material = material.strip()
+
+    if not material:
+        raise ValueError(
+            "El nombre del material es obligatorio."
+        )
+
     actualizar_fila(
         "inventario",
         "id",
         material_id,
         {
-            "material": material.strip(),
-            "cantidad": cantidad,
+            "material": material,
+            "responsable_id": responsable_id,
             "unidad": unidad.strip(),
             "disponible": disponible,
             "observaciones": observaciones.strip(),
@@ -70,4 +104,12 @@ def actualizar_material(
 
 
 def eliminar_material(material_id: str) -> None:
-    eliminar_fila("inventario", "id", material_id)
+    """
+    Elimina definitivamente un material.
+    """
+
+    eliminar_fila(
+        "inventario",
+        "id",
+        material_id,
+    )
