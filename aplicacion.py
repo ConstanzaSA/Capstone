@@ -20,11 +20,10 @@ aplicar_estilos()
 inicializar_datos()
 
 PAGINAS = [
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "inicio.py"), title="Inicio", icon="🏠", default=True),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "tareas.py"), title="Tareas actuales", icon="🧩"),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "integrantes.py"), title="Integrantes", icon="👥"),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "inventario.py"), title="Inventario", icon="📦"),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "historial.py"), title="Historial", icon="📜"),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "inicio.py"), title="Inicio", icon="", default=True),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "tareas.py"), title="Tareas", icon=""),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "integrantes.py"), title="Integrantes", icon=""),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "inventario.py"), title="Inventario", icon=""),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "configuracion.py"), title="Configuración", icon="⚙️"),
 ]
 
