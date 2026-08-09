@@ -254,7 +254,7 @@ for tarea in sorted(
             if not subtareas:
 
                 st.info(
-                    "Esta tarea todavía no tiene checklist."
+                    "Esta tarea todavía no tiene actividades."
                 )
 
             else:
@@ -669,7 +669,7 @@ for tarea in sorted(
             # ==================================================
 
             if st.button(
-                "➕ Añadir checklist",
+                "➕ Añadir actividad",
                 key=f"add_check_{tarea['id']}",
                 use_container_width=True,
             ):
