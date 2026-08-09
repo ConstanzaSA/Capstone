@@ -7,8 +7,6 @@ from componentes.interfaz import encabezado
 from servicios.gestor_compras import (
     obtener_compras,
     crear_compra,
-    marcar_comprado,
-    marcar_sin_comprar,
     actualizar_compra,
     eliminar_compra,
 )
@@ -18,7 +16,8 @@ from servicios.gestor_tareas import (
 )
 
 from servicios.gestor_inventario import (
-    agregar_stock,
+    agregar_stock_compra,
+    eliminar_stock_compra,
 )
 
 
@@ -49,11 +48,18 @@ ids_integrantes = list(
 
 
 # ==========================================================
-# AÑADIR COMPRA
+# COMPRAS EXISTENTES
+# ==========================================================
+
+compras = obtener_compras()
+
+
+# ==========================================================
+# CREAR COMPRA
 # ==========================================================
 
 with st.expander(
-    "➕ Añadir una compra",
+    "➕ Añadir compra",
     expanded=True,
 ):
 
@@ -105,6 +111,36 @@ with st.expander(
         )
 
         # --------------------------------------------------
+        # COMPRADOR
+        # --------------------------------------------------
+
+        opciones_comprador = [
+            None
+        ] + ids_integrantes
+
+        comprador = st.selectbox(
+            "Comprador",
+            options=opciones_comprador,
+            format_func=lambda x: (
+                "Sin Definir"
+                if x is None
+                else nombres[x]
+            ),
+        )
+
+        # --------------------------------------------------
+        # ESTADO
+        # --------------------------------------------------
+
+        estado = st.selectbox(
+            "Estado",
+            [
+                "Sin comprar",
+                "Comprado",
+            ],
+        )
+
+        # --------------------------------------------------
         # CREAR
         # --------------------------------------------------
 
@@ -118,18 +154,71 @@ with st.expander(
 
             try:
 
-                crear_compra(
-                    nombre_compra,
-                    cantidad,
-                    link,
-                    precio,
-                )
+                # Si está comprado pero no tiene
+                # comprador, no permitirlo.
 
-                st.success(
-                    "Compra añadida correctamente."
-                )
+                if (
+                    estado == "Comprado"
+                    and comprador is None
+                ):
+                    st.error(
+                        "Debes seleccionar quién "
+                        "realizó la compra."
+                    )
 
-                st.rerun()
+                else:
+
+                    crear_compra(
+                        nombre_compra=nombre_compra,
+                        cantidad=cantidad,
+                        link=link,
+                        precio=precio,
+                        comprador=comprador,
+                        estado=estado,
+                    )
+
+                    # ------------------------------------------
+                    # SI SE CREA COMO COMPRADO
+                    # ------------------------------------------
+
+                    if estado == "Comprado":
+
+                        nueva_compra = obtener_compras()
+
+                        compra_creada = next(
+                            (
+                                compra
+                                for compra
+                                in nueva_compra
+                                if (
+                                    compra[
+                                        "nombre_compra"
+                                    ]
+                                    == nombre_compra.strip()
+                                    and
+                                    compra[
+                                        "cantidad"
+                                    ]
+                                    == cantidad
+                                )
+                            ),
+                            None,
+                        )
+
+                        if compra_creada:
+
+                            agregar_stock_compra(
+                                compra_creada["id"],
+                                nombre_compra,
+                                cantidad,
+                                comprador,
+                            )
+
+                    st.success(
+                        "Compra añadida correctamente."
+                    )
+
+                    st.rerun()
 
             except ValueError as error:
 
@@ -137,278 +226,76 @@ with st.expander(
 
 
 # ==========================================================
-# LISTA DE COMPRAS
+# EDITAR COMPRAS
 # ==========================================================
 
-st.subheader("Lista de compras")
+with st.expander(
+    "✏️ Editar compras",
+    expanded=False,
+):
 
-compras = obtener_compras()
+    if not compras:
 
+        st.info(
+            "Todavía no hay compras para editar."
+        )
 
-# ==========================================================
-# SEPARAR ESTADOS
-# ==========================================================
+    else:
 
-sin_comprar = [
-    compra
-    for compra in compras
-    if compra.get("estado")
-    == "Sin comprar"
-]
+        # --------------------------------------------------
+        # SELECCIONAR COMPRA
+        # --------------------------------------------------
 
-compradas = [
-    compra
-    for compra in compras
-    if compra.get("estado")
-    == "Comprado"
-]
-
-
-# ==========================================================
-# POR COMPRAR
-# ==========================================================
-
-st.markdown("### 🛒 Por comprar")
-
-if not sin_comprar:
-
-    st.info(
-        "No hay compras pendientes."
-    )
-
-else:
-
-    for compra in sin_comprar:
-
-        with st.container(
-            border=True
-        ):
-
-            st.markdown(
-                f"### 🟡 "
-                f"{compra['nombre_compra']}"
-            )
-
-            col1, col2, col3 = st.columns(
-                [2, 1, 1]
-            )
-
-            with col1:
-
-                st.write(
-                    f"**Cantidad:** "
-                    f"{compra['cantidad']}"
-                )
-
-            with col2:
-
-                st.write(
-                    f"**Precio:** "
-                    f"${float(compra.get('precio', 0)):,.0f}"
-                )
-
-            with col3:
-
-                st.write(
-                    "**Estado:** Sin comprar"
-                )
-
-            if compra.get("link"):
-
-                st.link_button(
-                    "🔗 Ver producto",
-                    compra["link"],
-                )
-
-            # --------------------------------------------------
-            # REGISTRAR COMPRA
-            # --------------------------------------------------
-
-            if ids_integrantes:
-
-                comprador = st.selectbox(
-                    "¿Quién pagó?",
-                    options=ids_integrantes,
-                    format_func=lambda x: (
-                        nombres[x]
-                    ),
-                    key=(
-                        f"comprador_"
-                        f"{compra['id']}"
-                    ),
-                )
-
-                if st.button(
-                    "🛒 Marcar como comprado",
-                    key=(
-                        f"comprar_"
-                        f"{compra['id']}"
-                    ),
-                    type="primary",
-                    use_container_width=True,
-                ):
-
-                    try:
-
-                        # ------------------------------------------
-                        # 1. MARCAR COMPRA
-                        # ------------------------------------------
-
-                        marcar_comprado(
-                            compra["id"],
-                            comprador,
-                        )
-
-                        # ------------------------------------------
-                        # 2. AGREGAR AL INVENTARIO
-                        # ------------------------------------------
-
-                        agregar_stock(
-                            material=(
-                                compra[
-                                    "nombre_compra"
-                                ]
-                            ),
-                            cantidad=float(
-                                compra[
-                                    "cantidad"
-                                ]
-                            ),
-                            unidad="unidades",
-                            responsable_id=(
-                                comprador
-                            ),
-                            observaciones=(
-                                f"Compra "
-                                f"#{compra['id']}"
-                            ),
-                        )
-
-                        st.success(
-                            "Compra registrada y "
-                            "material añadido al inventario."
-                        )
-
-                        st.rerun()
-
-                    except ValueError as error:
-
-                        st.error(
-                            str(error)
-                        )
-
-            else:
-
-                st.warning(
-                    "No hay integrantes registrados."
-                )
-
-
-# ==========================================================
-# COMPRADAS
-# ==========================================================
-
-st.markdown("### 📦 Comprado")
-
-if not compradas:
-
-    st.info(
-        "Todavía no hay compras realizadas."
-    )
-
-else:
-
-    for compra in compradas:
-
-        with st.container(
-            border=True
-        ):
-
-            st.markdown(
-                f"### 🟢 "
-                f"{compra['nombre_compra']}"
-            )
-
-            col1, col2, col3 = st.columns(
-                [2, 1, 1]
-            )
-
-            with col1:
-
-                st.write(
-                    f"**Cantidad:** "
-                    f"{compra['cantidad']}"
-                )
-
-            with col2:
-
-                st.write(
-                    f"**Precio:** "
-                    f"${float(compra.get('precio', 0)):,.0f}"
-                )
-
-            with col3:
-
-                comprador_id = compra.get(
-                    "comprador"
-                )
-
-                st.write(
-                    "**Pagó:** "
-                    + nombres.get(
-                        comprador_id,
-                        "Desconocido",
-                    )
-                )
-
-            if compra.get("link"):
-
-                st.link_button(
-                    "🔗 Ver producto",
-                    compra["link"],
-                )
-
-            st.success(
-                "📦 Este material fue añadido al inventario."
-            )
-
-            # --------------------------------------------------
-            # DESHACER
-            # --------------------------------------------------
-
-            if st.button(
-                "↩️ Volver a Sin comprar",
-                key=(
-                    f"deshacer_"
-                    f"{compra['id']}"
+        compra_id = st.selectbox(
+            "Selecciona una compra",
+            options=[
+                compra["id"]
+                for compra in compras
+            ],
+            format_func=lambda x: next(
+                (
+                    compra[
+                        "nombre_compra"
+                    ]
+                    for compra in compras
+                    if compra["id"] == x
                 ),
-            ):
+                x,
+            ),
+        )
 
-                marcar_sin_comprar(
-                    compra["id"]
-                )
+        compra = next(
+            (
+                item
+                for item in compras
+                if item["id"] == compra_id
+            ),
+            None,
+        )
 
-                st.rerun()
+        if compra:
+
+            st.divider()
 
             # --------------------------------------------------
-            # EDITAR
+            # NOMBRE
             # --------------------------------------------------
 
-            with st.expander(
-                "✏️ Editar compra"
-            ):
+            nuevo_nombre = st.text_input(
+                "Nombre de la compra",
+                value=compra.get(
+                    "nombre_compra",
+                    "",
+                ),
+            )
 
-                nuevo_nombre = st.text_input(
-                    "Nombre",
-                    compra.get(
-                        "nombre_compra",
-                        "",
-                    ),
-                    key=(
-                        f"nombre_edit_"
-                        f"{compra['id']}"
-                    ),
-                )
+            # --------------------------------------------------
+            # CANTIDAD / PRECIO
+            # --------------------------------------------------
+
+            col1, col2 = st.columns(2)
+
+            with col1:
 
                 nueva_cantidad = st.number_input(
                     "Cantidad",
@@ -420,11 +307,9 @@ else:
                         )
                     ),
                     step=1.0,
-                    key=(
-                        f"cantidad_edit_"
-                        f"{compra['id']}"
-                    ),
                 )
+
+            with col2:
 
                 nuevo_precio = st.number_input(
                     "Precio",
@@ -436,73 +321,281 @@ else:
                         )
                     ),
                     step=100.0,
-                    key=(
-                        f"precio_edit_"
-                        f"{compra['id']}"
-                    ),
                 )
 
-                nuevo_link = st.text_input(
-                    "Link",
-                    compra.get(
-                        "link",
-                        "",
-                    ),
+            # --------------------------------------------------
+            # LINK
+            # --------------------------------------------------
+
+            nuevo_link = st.text_input(
+                "🔗 Link del producto",
+                value=compra.get(
+                    "link",
+                    "",
+                ),
+            )
+
+            # --------------------------------------------------
+            # COMPRADOR
+            # --------------------------------------------------
+
+            comprador_actual = compra.get(
+                "comprador"
+            )
+
+            opciones_comprador = [
+                None
+            ] + ids_integrantes
+
+            if (
+                comprador_actual
+                not in opciones_comprador
+            ):
+                comprador_actual = None
+
+            nuevo_comprador = st.selectbox(
+                "Comprador",
+                options=opciones_comprador,
+                index=opciones_comprador.index(
+                    comprador_actual
+                ),
+                format_func=lambda x: (
+                    "Sin Definir"
+                    if x is None
+                    else nombres[x]
+                ),
+            )
+
+            # --------------------------------------------------
+            # ESTADO
+            # --------------------------------------------------
+
+            estado_actual = compra.get(
+                "estado",
+                "Sin comprar",
+            )
+
+            nuevo_estado = st.selectbox(
+                "Estado",
+                [
+                    "Sin comprar",
+                    "Comprado",
+                ],
+                index=(
+                    1
+                    if estado_actual
+                    == "Comprado"
+                    else 0
+                ),
+            )
+
+            st.divider()
+
+            # --------------------------------------------------
+            # GUARDAR
+            # --------------------------------------------------
+
+            col1, col2 = st.columns(
+                [3, 1]
+            )
+
+            with col1:
+
+                guardar = st.button(
+                    "Guardar cambios",
                     key=(
-                        f"link_edit_"
-                        f"{compra['id']}"
+                        f"guardar_compra_"
+                        f"{compra_id}"
                     ),
+                    type="primary",
+                    use_container_width=True,
                 )
 
-                col1, col2 = st.columns(2)
+            with col2:
 
-                with col1:
+                eliminar = st.button(
+                    "Eliminar",
+                    key=(
+                        f"eliminar_compra_"
+                        f"{compra_id}"
+                    ),
+                    use_container_width=True,
+                )
 
-                    if st.button(
-                        "Guardar cambios",
-                        key=(
-                            f"guardar_"
-                            f"{compra['id']}"
-                        ),
-                        type="primary",
-                        use_container_width=True,
+            # ==================================================
+            # GUARDAR CAMBIOS
+            # ==================================================
+
+            if guardar:
+
+                if (
+                    nuevo_estado == "Comprado"
+                    and nuevo_comprador is None
+                ):
+
+                    st.error(
+                        "Debes seleccionar quién "
+                        "realizó la compra."
+                    )
+
+                else:
+
+                    estado_anterior = compra.get(
+                        "estado",
+                        "Sin comprar",
+                    )
+
+                    # ------------------------------------------
+                    # ACTUALIZAR COMPRA
+                    # ------------------------------------------
+
+                    actualizar_compra(
+                        compra_id=compra_id,
+                        nombre_compra=nuevo_nombre,
+                        cantidad=nueva_cantidad,
+                        link=nuevo_link,
+                        precio=nuevo_precio,
+                        comprador=nuevo_comprador,
+                        estado=nuevo_estado,
+                    )
+
+                    # ------------------------------------------
+                    # SIN COMPRAR → COMPRADO
+                    # ------------------------------------------
+
+                    if (
+                        nuevo_estado
+                        == "Comprado"
                     ):
 
-                        try:
-
-                            actualizar_compra(
-                                compra["id"],
-                                nuevo_nombre,
-                                nueva_cantidad,
-                                nuevo_link,
-                                nuevo_precio,
-                            )
-
-                            st.success(
-                                "Compra actualizada."
-                            )
-
-                            st.rerun()
-
-                        except ValueError as error:
-
-                            st.error(
-                                str(error)
-                            )
-
-                with col2:
-
-                    if st.button(
-                        "Eliminar",
-                        key=(
-                            f"eliminar_"
-                            f"{compra['id']}"
-                        ),
-                        use_container_width=True,
-                    ):
-
-                        eliminar_compra(
-                            compra["id"]
+                        agregar_stock_compra(
+                            compra_id,
+                            nuevo_nombre,
+                            nueva_cantidad,
+                            nuevo_comprador,
                         )
 
-                        st.rerun()
+                    # ------------------------------------------
+                    # COMPRADO → SIN COMPRAR
+                    # ------------------------------------------
+
+                    elif (
+                        nuevo_estado
+                        == "Sin comprar"
+                    ):
+
+                        eliminar_stock_compra(
+                            compra_id
+                        )
+
+                    st.success(
+                        "Compra actualizada."
+                    )
+
+                    st.rerun()
+
+            # ==================================================
+            # ELIMINAR
+            # ==================================================
+
+            if eliminar:
+
+                # Si estaba comprada, sacar
+                # también del inventario.
+
+                if (
+                    compra.get("estado")
+                    == "Comprado"
+                ):
+
+                    eliminar_stock_compra(
+                        compra_id
+                    )
+
+                eliminar_compra(
+                    compra_id
+                )
+
+                st.success(
+                    "Compra eliminada."
+                )
+
+                st.rerun()
+
+
+# ==========================================================
+# LISTA DE COMPRAS
+# ==========================================================
+
+st.subheader("Lista de compras")
+
+if not compras:
+
+    st.info(
+        "Todavía no hay compras registradas."
+    )
+
+else:
+
+    # ======================================================
+    # TABLA
+    # ======================================================
+
+    datos_tabla = []
+
+    for compra in compras:
+
+        comprador_id = compra.get(
+            "comprador"
+        )
+
+        comprador_nombre = (
+            nombres.get(
+                comprador_id,
+                "Sin Definir",
+            )
+            if comprador_id
+            else "Sin Definir"
+        )
+
+        datos_tabla.append(
+            {
+                "Nombre": compra.get(
+                    "nombre_compra",
+                    "",
+                ),
+                "Precio": (
+                    f"${float(
+                        compra.get(
+                            'precio',
+                            0,
+                        )
+                    ):,.0f}"
+                ),
+                "Cantidad": compra.get(
+                    "cantidad",
+                    0,
+                ),
+                "Estado": compra.get(
+                    "estado",
+                    "Sin comprar",
+                ),
+                "Link": (
+                    "🔗 Ver producto"
+                    if compra.get("link")
+                    else ""
+                ),
+            }
+        )
+
+    st.dataframe(
+        datos_tabla,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Link": st.column_config.LinkColumn(
+                "Link",
+                display_text="🔗 Ver producto",
+            ),
+        },
+    )
