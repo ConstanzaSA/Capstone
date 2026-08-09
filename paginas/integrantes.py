@@ -35,12 +35,12 @@ with st.expander(
 
         nombre_nuevo = col1.text_input(
             "Nombre",
-            placeholder="Ej.: Javier Aguilera",
+            placeholder="Ej.: Alberto",
         )
 
         rol_nuevo = col2.text_input(
             "Rol",
-            placeholder="Ej.: Mecánica",
+            placeholder="Ej.: Robotics",
         )
 
         crear = st.form_submit_button(
@@ -101,39 +101,39 @@ else:
             # DATOS DEL INTEGRANTE
             # ==================================================
 
-            col1, col2 = st.columns(2)
+            #col1, col2 = st.columns(2)
 
-            nuevo_nombre = col1.text_input(
-                "Nombre",
-                integrante["nombre"],
-                key=f"nombre_{integrante['id']}",
-            )
+            #nuevo_nombre = col1.text_input(
+            #    "Nombre",
+            #    integrante["nombre"],
+            #    key=f"nombre_{integrante['id']}",
+            #)
 
-            nuevo_rol = col2.text_input(
-                "Rol",
-                integrante.get("rol", ""),
-                key=f"rol_{integrante['id']}",
-            )
+            #nuevo_rol = col2.text_input(
+            #    "Rol",
+            #    integrante.get("rol", ""),
+            #    key=f"rol_{integrante['id']}",
+            #)
 
-            if st.button(
-                "Guardar datos del integrante",
-                key=f"guardar_integrante_{integrante['id']}",
-                type="primary",
-            ):
+            #if st.button(
+            #    "Guardar datos del integrante",
+            #    key=f"guardar_integrante_{integrante['id']}",
+            #    type="primary",
+            #):
 
-                actualizar_integrante(
-                    integrante["id"],
-                    nuevo_nombre,
-                    nuevo_rol,
-                )
+            #    actualizar_integrante(
+            #        integrante["id"],
+            #        nuevo_nombre,
+            #        nuevo_rol,
+            #    )
 
-                st.success(
+            #    st.success(
                     "Integrante actualizado."
-                )
+            #    )
 
-                st.rerun()
+            #    st.rerun()
 
-            st.divider()
+            #st.divider()
 
             # ==================================================
             # TAREAS DEL INTEGRANTE
