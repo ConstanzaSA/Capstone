@@ -239,26 +239,11 @@ with st.expander(
 
                 st.rerun()
 
-
-# ==========================================================
-# LISTA DE TAREAS
-# ==========================================================
-
-st.subheader("Lista de tareas")
-
-tareas = obtener_tareas()
-
-
-if not tareas:
-
-    st.info(
-        "Todavía no hay tareas registradas."
-    )
 # ==========================================================
 # EDITAR TAREA
 # ==========================================================
 
-elif tareas:
+if tareas:
 
     st.divider()
 
@@ -847,6 +832,21 @@ elif tareas:
 
                 st.rerun()
 
+# ==========================================================
+# LISTA DE TAREAS
+# ==========================================================
+
+st.subheader("Lista de tareas")
+
+tareas = obtener_tareas()
+
+
+if not tareas:
+
+    st.info(
+        "Todavía no hay tareas registradas."
+    )
+    
 else:
     
     # ======================================================
