@@ -1,105 +1,115 @@
 from __future__ import annotations
 
-import streamlit as st
+from datetime import datetime, timezone
+from typing import Any
+from uuid import uuid4
 
-from componentes.interfaz import encabezado
-from servicios.gestor_inventario import (
-    actualizar_material,
-    crear_material,
-    eliminar_material,
-    obtener_inventario,
+from servicios.almacenamiento import (
+    actualizar_fila,
+    cargar_filas,
+    eliminar_fila,
+    insertar_fila,
 )
 
-encabezado("Inventario", "Material disponible actualmente para el equipo")
 
-with st.expander("➕ Añadir material", expanded=True):
-    with st.form("formulario_nuevo_material", clear_on_submit=True):
-        col1, col2, col3 = st.columns([2.2, 1, 1])
-        material = col1.text_input("Material")
-        cantidad = col2.number_input("Cantidad", min_value=0.0, value=1.0, step=1.0)
-        unidad = col3.text_input("Unidad", placeholder="unidades, m, kg...")
+def ahora() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
-        col4, col5 = st.columns([1, 3])
-        disponible = col4.checkbox("Disponible", value=True)
-        observaciones = col5.text_input("Observaciones")
 
-        guardar = st.form_submit_button(
-            "Añadir al inventario",
-            type="primary",
-            use_container_width=True,
+# ==========================================================
+# INVENTARIO
+# ==========================================================
+
+def obtener_inventario() -> list[dict[str, Any]]:
+    """
+    Obtiene todos los materiales registrados.
+    Se ordenan alfabéticamente por material.
+    """
+    return cargar_filas("inventario", "material")
+
+
+def obtener_integrantes() -> list[dict[str, Any]]:
+    """
+    Obtiene los integrantes disponibles para asignar
+    como responsables/dueños de un material.
+    """
+    return cargar_filas("integrantes", "nombre")
+
+
+def crear_material(
+    material: str,
+    responsable_id: str | None,
+    unidad: str,
+    disponible: bool,
+    observaciones: str,
+) -> None:
+    """
+    Crea un nuevo material en el inventario.
+    """
+
+    material = material.strip()
+
+    if not material:
+        raise ValueError(
+            "El nombre del material es obligatorio."
         )
 
-        if guardar:
-            try:
-                crear_material(material, cantidad, unidad, disponible, observaciones)
-                st.success("Material añadido al inventario.")
-                st.rerun()
-            except ValueError as error:
-                st.error(str(error))
+    insertar_fila(
+        "inventario",
+        {
+            "id": uuid4().hex,
+            "material": material,
+            "responsable_id": responsable_id,
+            "cantidad": 0,
+            "unidad": unidad.strip(),
+            "disponible": disponible,
+            "observaciones": observaciones.strip(),
+            "fecha_actualizacion": ahora(),
+        },
+    )
 
-st.subheader("Material disponible")
 
-inventario = obtener_inventario()
+def actualizar_material(
+    material_id: str,
+    material: str,
+    responsable_id: str | None,
+    unidad: str,
+    disponible: bool,
+    observaciones: str,
+) -> None:
+    """
+    Actualiza un material existente.
+    """
 
-if not inventario:
-    st.info("Todavía no hay materiales registrados.")
+    material = material.strip()
 
-for item in inventario:
-    with st.container(border=True):
-        col1, col2, col3, col4 = st.columns([2.2, 1, 1.2, 1])
-
-        nuevo_material = col1.text_input(
-            "Material",
-            item.get("material", ""),
-            key=f"material_{item['id']}",
-        )
-        nueva_cantidad = col2.number_input(
-            "Cantidad",
-            min_value=0.0,
-            value=float(item.get("cantidad") or 0),
-            step=1.0,
-            key=f"cantidad_{item['id']}",
-        )
-        nueva_unidad = col3.text_input(
-            "Unidad",
-            item.get("unidad", ""),
-            key=f"unidad_{item['id']}",
-        )
-        nuevo_estado = col4.checkbox(
-            "Disponible",
-            value=bool(item.get("disponible", True)),
-            key=f"disponible_{item['id']}",
+    if not material:
+        raise ValueError(
+            "El nombre del material es obligatorio."
         )
 
-        nuevas_observaciones = st.text_input(
-            "Observaciones",
-            item.get("observaciones", ""),
-            key=f"observaciones_{item['id']}",
-        )
+    actualizar_fila(
+        "inventario",
+        "id",
+        material_id,
+        {
+            "material": material,
+            "responsable_id": responsable_id,
+            "unidad": unidad.strip(),
+            "disponible": disponible,
+            "observaciones": observaciones.strip(),
+            "fecha_actualizacion": ahora(),
+        },
+    )
 
-        guardar_col, eliminar_col = st.columns([4, 1])
 
-        if guardar_col.button(
-            "Guardar cambios",
-            key=f"guardar_material_{item['id']}",
-            type="primary",
-            use_container_width=True,
-        ):
-            actualizar_material(
-                item["id"],
-                nuevo_material,
-                nueva_cantidad,
-                nueva_unidad,
-                nuevo_estado,
-                nuevas_observaciones,
-            )
-            st.success("Material actualizado.")
-            st.rerun()
+def eliminar_material(material_id: str) -> None:
+    """
+    Elimina definitivamente un material.
+    """
 
-        if eliminar_col.button(
-            "Eliminar",
-            key=f"eliminar_material_{item['id']}",
-            use_container_width=True,
-        ):
-            eliminar_material(item["id"])
-            st.rerun()
+    eliminar_fila(
+        "inventario",
+        "id",
+        material_id,
+    )
