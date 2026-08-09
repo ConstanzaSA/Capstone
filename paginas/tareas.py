@@ -16,7 +16,7 @@ from servicios.gestor_tareas import (
 # ==========================================================
 
 encabezado(
-    "Tareas actuales",
+    "Asignar Tareas",
     "Crea, asigna y actualiza actividades del proyecto",
 )
 
