@@ -203,3 +203,106 @@ def agregar_stock(
                 "fecha_actualizacion": ahora(),
             },
         )
+
+
+def agregar_stock_compra(
+    compra_id: str,
+    material: str,
+    cantidad: float,
+    responsable_id: str | None,
+) -> None:
+    """
+    Añade al inventario un material proveniente
+    de una compra.
+
+    La compra queda identificada mediante
+    una observación interna.
+    """
+
+    material = material.strip()
+
+    if not material:
+        raise ValueError(
+            "El nombre del material es obligatorio."
+        )
+
+    if cantidad <= 0:
+        raise ValueError(
+            "La cantidad debe ser mayor que 0."
+        )
+
+    inventario = obtener_inventario()
+
+    marca_compra = f"Compra:{compra_id}"
+
+    # Buscar si esta compra ya fue añadida
+    existente = next(
+        (
+            item
+            for item in inventario
+            if item.get("observaciones", "")
+            == marca_compra
+        ),
+        None,
+    )
+
+    if existente:
+
+        actualizar_fila(
+            "inventario",
+            "id",
+            existente["id"],
+            {
+                "material": material,
+                "cantidad": cantidad,
+                "responsable_id": responsable_id,
+                "disponible": True,
+                "observaciones": marca_compra,
+                "fecha_actualizacion": ahora(),
+            },
+        )
+
+    else:
+
+        insertar_fila(
+            "inventario",
+            {
+                "id": uuid4().hex,
+                "material": material,
+                "responsable_id": responsable_id,
+                "cantidad": cantidad,
+                "unidad": "unidades",
+                "disponible": True,
+                "observaciones": marca_compra,
+                "fecha_actualizacion": ahora(),
+            },
+        )
+
+
+def eliminar_stock_compra(
+    compra_id: str,
+) -> None:
+    """
+    Elimina del inventario el material asociado
+    a una compra específica.
+    """
+
+    inventario = obtener_inventario()
+
+    marca_compra = f"Compra:{compra_id}"
+
+    existente = next(
+        (
+            item
+            for item in inventario
+            if item.get("observaciones", "")
+            == marca_compra
+        ),
+        None,
+    )
+
+    if existente:
+
+        eliminar_material(
+            existente["id"]
+        )
