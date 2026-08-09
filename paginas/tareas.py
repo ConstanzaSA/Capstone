@@ -240,14 +240,14 @@ for tarea in sorted(
         # ==================================================
         # CHECKLIST
         # ==================================================
-
+        
         subtareas = tarea.get(
             "subtareas",
             [],
         )
 
         with st.expander(
-            f"☑️ Checklist ({len(subtareas)})",
+            f"☑️ Actividades ({len(subtareas)})",
             expanded=False,
         ):
 
@@ -393,12 +393,11 @@ for tarea in sorted(
             # ==================================================
 
             st.markdown(
-                "### ☑️ Checklist"
+                "### ☑️ Añadir o Eliminar Actividades"
             )
 
             st.caption(
-                "Puedes editar, reasignar o eliminar "
-                "cada elemento."
+                "Procura asignar la actividad a un miembro del equipo para que aparezca en su feed!"
             )
 
             actuales = tarea.get(
