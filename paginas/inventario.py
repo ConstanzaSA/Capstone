@@ -137,64 +137,6 @@ with st.expander(
 
                 st.error(str(error))
 
-
-# ==========================================================
-# MATERIAL DISPONIBLE
-# ==========================================================
-
-st.subheader("Material disponible")
-
-
-if not inventario:
-
-    st.info(
-        "Todavía no hay materiales registrados."
-    )
-
-else:
-
-    filas_tabla = []
-
-    for item in inventario:
-
-        responsable = nombres_integrantes.get(
-            item.get("responsable_id"),
-            "Sin asignar",
-        )
-
-        filas_tabla.append(
-            {
-                "Material": item.get(
-                    "material",
-                    "",
-                ),
-                "Responsable / dueño": responsable,
-                "Unidad": item.get(
-                    "unidad",
-                    "",
-                ),
-                "Disponible": (
-                    "Sí"
-                    if item.get(
-                        "disponible",
-                        True,
-                    )
-                    else "No"
-                ),
-                "Observaciones": item.get(
-                    "observaciones",
-                    "",
-                ),
-            }
-        )
-
-    st.dataframe(
-        filas_tabla,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-
 # ==========================================================
 # MODIFICAR INVENTARIO
 # ==========================================================
@@ -398,3 +340,62 @@ if inventario:
                 )
 
                 st.rerun()
+
+
+# ==========================================================
+# MATERIAL DISPONIBLE
+# ==========================================================
+
+st.subheader("Material disponible")
+
+
+if not inventario:
+
+    st.info(
+        "Todavía no hay materiales registrados."
+    )
+
+else:
+
+    filas_tabla = []
+
+    for item in inventario:
+
+        responsable = nombres_integrantes.get(
+            item.get("responsable_id"),
+            "Sin asignar",
+        )
+
+        filas_tabla.append(
+            {
+                "Material": item.get(
+                    "material",
+                    "",
+                ),
+                "Responsable / dueño": responsable,
+                "Unidad": item.get(
+                    "unidad",
+                    "",
+                ),
+                "Disponible": (
+                    "Sí"
+                    if item.get(
+                        "disponible",
+                        True,
+                    )
+                    else "No"
+                ),
+                "Observaciones": item.get(
+                    "observaciones",
+                    "",
+                ),
+            }
+        )
+
+    st.dataframe(
+        filas_tabla,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
