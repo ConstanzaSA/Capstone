@@ -1,115 +1,400 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any
-from uuid import uuid4
+import streamlit as st
 
-from servicios.almacenamiento import (
-    actualizar_fila,
-    cargar_filas,
-    eliminar_fila,
-    insertar_fila,
+from componentes.interfaz import encabezado
+from servicios.gestor_inventario import (
+    actualizar_material,
+    crear_material,
+    eliminar_material,
+    obtener_inventario,
+    obtener_integrantes,
 )
 
 
-def ahora() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+# ==========================================================
+# ENCABEZADO
+# ==========================================================
+
+encabezado(
+    "Inventario",
+    "Material disponible actualmente para el equipo",
+)
 
 
 # ==========================================================
-# INVENTARIO
+# DATOS
 # ==========================================================
 
-def obtener_inventario() -> list[dict[str, Any]]:
-    """
-    Obtiene todos los materiales registrados.
-    Se ordenan alfabéticamente por material.
-    """
-    return cargar_filas("inventario", "material")
+inventario = obtener_inventario()
+integrantes = obtener_integrantes()
 
 
-def obtener_integrantes() -> list[dict[str, Any]]:
-    """
-    Obtiene los integrantes disponibles para asignar
-    como responsables/dueños de un material.
-    """
-    return cargar_filas("integrantes", "nombre")
+nombres_integrantes = {
+    integrante["id"]: integrante["nombre"]
+    for integrante in integrantes
+}
 
 
-def crear_material(
-    material: str,
-    responsable_id: str | None,
-    unidad: str,
-    disponible: bool,
-    observaciones: str,
-) -> None:
-    """
-    Crea un nuevo material en el inventario.
-    """
+ids_integrantes = list(
+    nombres_integrantes.keys()
+)
 
-    material = material.strip()
 
-    if not material:
-        raise ValueError(
-            "El nombre del material es obligatorio."
+# ==========================================================
+# AÑADIR MATERIAL
+# ==========================================================
+
+with st.expander(
+    "➕ Añadir material",
+    expanded=True,
+):
+
+    with st.form(
+        "formulario_nuevo_material",
+        clear_on_submit=True,
+    ):
+
+        col1, col2 = st.columns(2)
+
+        # --------------------------------------------------
+        # MATERIAL
+        # --------------------------------------------------
+
+        material = col1.text_input(
+            "Material",
+            placeholder="Ej.: Motor DC",
         )
 
-    insertar_fila(
-        "inventario",
-        {
-            "id": uuid4().hex,
-            "material": material,
-            "responsable_id": responsable_id,
-            "cantidad": 0,
-            "unidad": unidad.strip(),
-            "disponible": disponible,
-            "observaciones": observaciones.strip(),
-            "fecha_actualizacion": ahora(),
-        },
-    )
+        # --------------------------------------------------
+        # RESPONSABLE / DUEÑO
+        # --------------------------------------------------
 
-
-def actualizar_material(
-    material_id: str,
-    material: str,
-    responsable_id: str | None,
-    unidad: str,
-    disponible: bool,
-    observaciones: str,
-) -> None:
-    """
-    Actualiza un material existente.
-    """
-
-    material = material.strip()
-
-    if not material:
-        raise ValueError(
-            "El nombre del material es obligatorio."
+        responsable_id = col2.selectbox(
+            "Responsable / dueño",
+            options=[None] + ids_integrantes,
+            format_func=lambda x: (
+                "Sin asignar"
+                if x is None
+                else nombres_integrantes[x]
+            ),
+            help=(
+                "Integrante que actualmente tiene "
+                "o es dueño de este material."
+            ),
         )
 
-    actualizar_fila(
-        "inventario",
-        "id",
-        material_id,
-        {
-            "material": material,
-            "responsable_id": responsable_id,
-            "unidad": unidad.strip(),
-            "disponible": disponible,
-            "observaciones": observaciones.strip(),
-            "fecha_actualizacion": ahora(),
-        },
+        # --------------------------------------------------
+        # UNIDAD
+        # --------------------------------------------------
+
+        col3, col4 = st.columns(2)
+
+        unidad = col3.text_input(
+            "Unidad",
+            placeholder="Ej.: unidades, m, kg...",
+        )
+
+        disponible = col4.checkbox(
+            "Disponible",
+            value=True,
+        )
+
+        # --------------------------------------------------
+        # OBSERVACIONES
+        # --------------------------------------------------
+
+        observaciones = st.text_input(
+            "Observaciones",
+            placeholder="Información adicional del material...",
+        )
+
+        guardar = st.form_submit_button(
+            "Añadir al inventario",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if guardar:
+
+            try:
+
+                crear_material(
+                    material=material,
+                    responsable_id=responsable_id,
+                    unidad=unidad,
+                    disponible=disponible,
+                    observaciones=observaciones,
+                )
+
+                st.success(
+                    "Material añadido al inventario."
+                )
+
+                st.rerun()
+
+            except ValueError as error:
+
+                st.error(str(error))
+
+
+# ==========================================================
+# MATERIAL DISPONIBLE
+# ==========================================================
+
+st.subheader("Material disponible")
+
+
+if not inventario:
+
+    st.info(
+        "Todavía no hay materiales registrados."
+    )
+
+else:
+
+    filas_tabla = []
+
+    for item in inventario:
+
+        responsable = nombres_integrantes.get(
+            item.get("responsable_id"),
+            "Sin asignar",
+        )
+
+        filas_tabla.append(
+            {
+                "Material": item.get(
+                    "material",
+                    "",
+                ),
+                "Responsable / dueño": responsable,
+                "Unidad": item.get(
+                    "unidad",
+                    "",
+                ),
+                "Disponible": (
+                    "Sí"
+                    if item.get(
+                        "disponible",
+                        True,
+                    )
+                    else "No"
+                ),
+                "Observaciones": item.get(
+                    "observaciones",
+                    "",
+                ),
+            }
+        )
+
+    st.dataframe(
+        filas_tabla,
+        use_container_width=True,
+        hide_index=True,
     )
 
 
-def eliminar_material(material_id: str) -> None:
-    """
-    Elimina definitivamente un material.
-    """
+# ==========================================================
+# MODIFICAR INVENTARIO
+# ==========================================================
 
-    eliminar_fila(
-        "inventario",
-        "id",
-        material_id,
-    )
+if inventario:
+
+    with st.expander(
+        "✏️ Modificar inventario",
+        expanded=False,
+    ):
+
+        opciones_material = {
+            item["id"]: item["material"]
+            for item in inventario
+        }
+
+        material_id = st.selectbox(
+            "Seleccionar material",
+            options=list(
+                opciones_material.keys()
+            ),
+            format_func=lambda x: opciones_material[x],
+        )
+
+        material_seleccionado = next(
+            (
+                item
+                for item in inventario
+                if item["id"] == material_id
+            ),
+            None,
+        )
+
+        if material_seleccionado:
+
+            st.markdown(
+                "### Datos del material"
+            )
+
+            col1, col2 = st.columns(2)
+
+            # --------------------------------------------------
+            # MATERIAL
+            # --------------------------------------------------
+
+            nuevo_material = col1.text_input(
+                "Material",
+                value=material_seleccionado.get(
+                    "material",
+                    "",
+                ),
+                key=f"editar_material_{material_id}",
+            )
+
+            # --------------------------------------------------
+            # RESPONSABLE
+            # --------------------------------------------------
+
+            responsable_actual = (
+                material_seleccionado.get(
+                    "responsable_id"
+                )
+            )
+
+            opciones_responsable = (
+                [None] + ids_integrantes
+            )
+
+            if (
+                responsable_actual
+                not in opciones_responsable
+            ):
+                responsable_actual = None
+
+            nuevo_responsable = col2.selectbox(
+                "Responsable / dueño",
+                options=opciones_responsable,
+                index=opciones_responsable.index(
+                    responsable_actual
+                ),
+                format_func=lambda x: (
+                    "Sin asignar"
+                    if x is None
+                    else nombres_integrantes[x]
+                ),
+                key=(
+                    f"editar_responsable_"
+                    f"{material_id}"
+                ),
+            )
+
+            # --------------------------------------------------
+            # UNIDAD
+            # --------------------------------------------------
+
+            col3, col4 = st.columns(2)
+
+            nueva_unidad = col3.text_input(
+                "Unidad",
+                value=material_seleccionado.get(
+                    "unidad",
+                    "",
+                ),
+                key=f"editar_unidad_{material_id}",
+            )
+
+            nuevo_estado = col4.checkbox(
+                "Disponible",
+                value=bool(
+                    material_seleccionado.get(
+                        "disponible",
+                        True,
+                    )
+                ),
+                key=(
+                    f"editar_disponible_"
+                    f"{material_id}"
+                ),
+            )
+
+            # --------------------------------------------------
+            # OBSERVACIONES
+            # --------------------------------------------------
+
+            nuevas_observaciones = st.text_input(
+                "Observaciones",
+                value=material_seleccionado.get(
+                    "observaciones",
+                    "",
+                ),
+                key=(
+                    f"editar_observaciones_"
+                    f"{material_id}"
+                ),
+            )
+
+            st.markdown("")
+
+            guardar_col, eliminar_col = st.columns(
+                [4, 1]
+            )
+
+            # ==================================================
+            # GUARDAR
+            # ==================================================
+
+            if guardar_col.button(
+                "Guardar cambios",
+                key=(
+                    f"guardar_material_"
+                    f"{material_id}"
+                ),
+                type="primary",
+                use_container_width=True,
+            ):
+
+                try:
+
+                    actualizar_material(
+                        material_id=material_id,
+                        material=nuevo_material,
+                        responsable_id=(
+                            nuevo_responsable
+                        ),
+                        unidad=nueva_unidad,
+                        disponible=nuevo_estado,
+                        observaciones=(
+                            nuevas_observaciones
+                        ),
+                    )
+
+                    st.success(
+                        "Material actualizado."
+                    )
+
+                    st.rerun()
+
+                except ValueError as error:
+
+                    st.error(str(error))
+
+            # ==================================================
+            # ELIMINAR
+            # ==================================================
+
+            if eliminar_col.button(
+                "Eliminar",
+                key=(
+                    f"eliminar_material_"
+                    f"{material_id}"
+                ),
+                use_container_width=True,
+            ):
+
+                eliminar_material(
+                    material_id
+                )
+
+                st.success(
+                    "Material eliminado."
+                )
+
+                st.rerun()
