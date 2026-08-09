@@ -93,9 +93,9 @@ else:
 
         with pestana:
 
-            st.markdown(
-                f"### {integrante['nombre']}"
-            )
+            #st.markdown(
+            #    f"### {integrante['nombre']}"
+            #)
 
             # ==================================================
             # DATOS DEL INTEGRANTE
