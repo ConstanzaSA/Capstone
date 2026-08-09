@@ -114,42 +114,6 @@ with st.expander(
         )
 
         # --------------------------------------------------
-        # CHECKLIST INICIAL
-        # --------------------------------------------------
-
-        st.markdown("### Checklist")
-
-        st.caption(
-            "Puedes agregar las casillas que tendrá la tarea."
-        )
-
-        cantidad_checklist = st.number_input(
-            "Número de elementos",
-            min_value=0,
-            max_value=20,
-            value=0,
-            step=1,
-            key="cantidad_checklist_nueva",
-        )
-
-        subtareas_nuevas = []
-
-        for i in range(
-            int(cantidad_checklist)
-        ):
-
-            texto = st.text_input(
-                f"Checklist {i + 1}",
-                key=f"nueva_sub_{i}",
-                placeholder="Ej.: Revisar funcionamiento",
-            )
-
-            if texto.strip():
-                subtareas_nuevas.append(
-                    texto.strip()
-                )
-
-        # --------------------------------------------------
         # CREAR
         # --------------------------------------------------
 
