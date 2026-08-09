@@ -25,8 +25,8 @@ PAGINAS = [
     st.Page(str(CARPETA_PROYECTO / "paginas" / "integrantes.py"), title="Integrantes"),
     st.Page(str(CARPETA_PROYECTO/ "paginas"/ "compras.py"),title="Compras"),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "inventario.py"), title="Inventario"),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "historial.py"), title="Historial"),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "configuracion.py"), title="Configuración", icon="⚙️"),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "configuracion.py"), title="Configuración"),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "historial.py"), title="Historial")
 ]
 
 st.navigation(PAGINAS).run()
