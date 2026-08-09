@@ -57,195 +57,293 @@ def nombres_responsables(ids):
 
 with st.expander(
     "➕ Añadir una tarea",
-    expanded=True,
+    expanded=False,
 ):
 
-    with st.form(
-        "formulario_nueva_tarea",
-        clear_on_submit=True,
+    # --------------------------------------------------
+    # TÍTULO
+    # --------------------------------------------------
+
+    titulo_nueva = st.text_input(
+        "Título de la tarea",
+        placeholder="Ej.: Actualizar página web",
+        key="titulo_nueva_tarea",
+    )
+
+    # --------------------------------------------------
+    # RESPONSABLES / FECHA
+    # --------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        responsables_nuevos = st.multiselect(
+            "Responsables",
+            options=ids_integrantes,
+            format_func=lambda x: nombres[x],
+            help=(
+                "Selecciona las personas responsables "
+                "de esta tarea."
+            ),
+            key="responsables_nueva_tarea",
+        )
+
+    with col2:
+
+        fecha_entrega_nueva = st.date_input(
+            "Fecha de entrega",
+            value=None,
+            format="DD/MM/YYYY",
+            key="fecha_nueva_tarea",
+        )
+
+    # --------------------------------------------------
+    # PRIORIDAD
+    # --------------------------------------------------
+
+    prioridad_nueva = st.selectbox(
+        "Prioridad",
+        [
+            "Baja",
+            "Media",
+            "Alta",
+        ],
+        key="prioridad_nueva_tarea",
+    )
+
+    # ==================================================
+    # ACTIVIDADES
+    # ==================================================
+
+    st.markdown(
+        "### ☑️ Añadir o Eliminar Actividades"
+    )
+
+    st.caption(
+        "Procura asignar la actividad a un miembro "
+        "del equipo para que aparezca en su feed!"
+    )
+
+    st.markdown(
+        "#### Nuevas actividades"
+    )
+
+    # --------------------------------------------------
+    # GUARDAR ACTIVIDADES EN SESSION STATE
+    # --------------------------------------------------
+
+    nuevas_key = "nuevas_actividades_tarea"
+
+    if nuevas_key not in st.session_state:
+
+        st.session_state[nuevas_key] = []
+
+    # --------------------------------------------------
+    # MOSTRAR ACTIVIDADES
+    # --------------------------------------------------
+
+    for i, actividad in enumerate(
+        st.session_state[nuevas_key]
     ):
 
-        # --------------------------------------------------
-        # TÍTULO
-        # --------------------------------------------------
-
-        titulo = st.text_input(
-            "Título de la tarea",
-            placeholder="Ej.: Actualizar página web",
+        col1, col2, col3 = st.columns(
+            [4, 2, 0.5]
         )
 
-        # --------------------------------------------------
-        # RESPONSABLES / FECHA
-        # --------------------------------------------------
+        texto_key = (
+            f"nueva_actividad_texto_{i}"
+        )
 
-        col1, col2 = st.columns(2)
+        responsable_key = (
+            f"nueva_actividad_responsable_{i}"
+        )
 
-        with col1:
+        # ----------------------------------------------
+        # TEXTO
+        # ----------------------------------------------
 
-            responsables = st.multiselect(
-                "Responsables",
-                options=ids_integrantes,
+        texto = col1.text_input(
+            "Actividad",
+            value=actividad.get(
+                "texto",
+                "",
+            ),
+            placeholder=(
+                "Ej.: Probar funcionamiento"
+            ),
+            key=texto_key,
+            label_visibility="collapsed",
+        )
+
+        # ----------------------------------------------
+        # RESPONSABLE
+        # ----------------------------------------------
+
+        if responsables_nuevos:
+
+            responsable = col2.selectbox(
+                "Responsable",
+                options=responsables_nuevos,
                 format_func=lambda x: nombres[x],
-                help=(
-                    "Selecciona las personas responsables "
-                    "de esta tarea."
-                ),
+                key=responsable_key,
+                label_visibility="collapsed",
             )
 
-        with col2:
+        else:
 
-            fecha_entrega = st.date_input(
-                "Fecha de entrega",
-                value=None,
-                format="DD/MM/YYYY",
+            responsable = None
+
+            col2.caption(
+                "Asigna primero un responsable"
             )
 
-        # --------------------------------------------------
-        # PRIORIDAD
-        # --------------------------------------------------
+        # ----------------------------------------------
+        # ELIMINAR
+        # ----------------------------------------------
 
-        prioridad = st.selectbox(
-            "Prioridad",
-            [
-                "Baja",
-                "Media",
-                "Alta",
-            ],
-        )
-
-        # --------------------------------------------------
-        # ACTIVIDADES
-        # --------------------------------------------------
-
-        st.markdown(
-            "### ☑️ Actividades"
-        )
-
-        st.caption(
-            "Añade las actividades que componen esta tarea "
-            "y asigna cada una a un integrante."
-        )
-
-        cantidad_actividades = st.number_input(
-            "Cantidad de actividades",
-            min_value=0,
-            max_value=20,
-            value=0,
-            step=1,
-            key="cantidad_actividades_nueva",
-        )
-
-        subtareas_nuevas = []
-
-        for i in range(
-            int(cantidad_actividades)
+        if col3.button(
+            "🗑",
+            key=f"eliminar_nueva_actividad_{i}",
+            help="Eliminar actividad",
         ):
 
-            st.markdown(
-                f"**Actividad {i + 1}**"
-            )
+            st.session_state[
+                nuevas_key
+            ].pop(i)
 
-            col1, col2 = st.columns(
-                [4, 2]
-            )
+            st.rerun()
 
-            with col1:
+    # ==================================================
+    # AÑADIR ACTIVIDAD
+    # ==================================================
 
-                texto_actividad = st.text_input(
-                    "Actividad",
-                    placeholder=(
-                        "Ej.: Revisar funcionamiento"
-                    ),
-                    key=f"nueva_actividad_{i}",
-                    label_visibility="collapsed",
-                )
+    if st.button(
+        "➕ Añadir actividad",
+        key="añadir_actividad_nueva_tarea",
+        use_container_width=True,
+    ):
 
-            with col2:
-
-                if responsables:
-
-                    responsable_actividad = st.selectbox(
-                        "Responsable",
-                        options=responsables,
-                        format_func=lambda x: (
-                            nombres[x]
-                        ),
-                        key=(
-                            f"nuevo_responsable_"
-                            f"{i}"
-                        ),
-                        label_visibility="collapsed",
-                    )
-
-                else:
-
-                    responsable_actividad = None
-
-                    st.caption(
-                        "Selecciona primero "
-                        "un responsable"
-                    )
-
-            if texto_actividad.strip():
-
-                subtareas_nuevas.append(
-                    {
-                        "texto": (
-                            texto_actividad.strip()
-                        ),
-                        "integrante_id": (
-                            responsable_actividad
-                        ),
-                        "completada": False,
-                    }
-                )
-
-        # --------------------------------------------------
-        # CREAR
-        # --------------------------------------------------
-
-        crear = st.form_submit_button(
-            "Crear tarea",
-            type="primary",
-            use_container_width=True,
+        responsable_inicial = (
+            responsables_nuevos[0]
+            if responsables_nuevos
+            else None
         )
 
-        if crear:
+        st.session_state[
+            nuevas_key
+        ].append(
+            {
+                "texto": "",
+                "integrante_id": responsable_inicial,
+            }
+        )
 
-            if not titulo.strip():
+        st.rerun()
 
-                st.error(
-                    "El título de la tarea es obligatorio."
+    # --------------------------------------------------
+    # ESPACIO PEQUEÑO
+    # --------------------------------------------------
+
+    st.markdown(
+        "<div style='height: 8px'></div>",
+        unsafe_allow_html=True,
+    )
+
+    # ==================================================
+    # CREAR
+    # ==================================================
+
+    if st.button(
+        "Crear tarea",
+        type="primary",
+        use_container_width=True,
+        key="crear_tarea_principal",
+    ):
+
+        if not titulo_nueva.strip():
+
+            st.error(
+                "El título de la tarea es obligatorio."
+            )
+
+        else:
+
+            subtareas_nuevas = []
+
+            for i, actividad in enumerate(
+                st.session_state[nuevas_key]
+            ):
+
+                texto = st.session_state.get(
+                    f"nueva_actividad_texto_{i}",
+                    "",
                 )
 
-            else:
-
-                crear_tarea(
-                    titulo=titulo,
-                    descripcion="",
-                    responsables_ids=responsables,
-                    fecha_entrega=(
-                        fecha_entrega.isoformat()
-                        if fecha_entrega
-                        else None
+                responsable = st.session_state.get(
+                    f"nueva_actividad_responsable_{i}",
+                    actividad.get(
+                        "integrante_id"
                     ),
-                    prioridad=prioridad,
-                    subtareas=subtareas_nuevas,
                 )
 
-                st.success(
-                    "Tarea creada correctamente."
-                )
+                if texto.strip():
 
-                st.rerun()
+                    subtareas_nuevas.append(
+                        {
+                            "texto": texto.strip(),
+                            "integrante_id": responsable,
+                            "completada": False,
+                        }
+                    )
+
+            crear_tarea(
+                titulo=titulo_nueva,
+                descripcion="",
+                responsables_ids=(
+                    responsables_nuevos
+                ),
+                fecha_entrega=(
+                    fecha_entrega_nueva.isoformat()
+                    if fecha_entrega_nueva
+                    else None
+                ),
+                prioridad=prioridad_nueva,
+                subtareas=subtareas_nuevas,
+            )
+
+            # Limpiar actividades
+            st.session_state[
+                nuevas_key
+            ] = []
+
+            # Limpiar campos
+            for key in list(
+                st.session_state.keys()
+            ):
+
+                if (
+                    key.startswith(
+                        "nueva_actividad_texto_"
+                    )
+                    or key.startswith(
+                        "nueva_actividad_responsable_"
+                    )
+                ):
+
+                    del st.session_state[key]
+
+            st.success(
+                "Tarea creada correctamente."
+            )
+
+            st.rerun()
 
 # ==========================================================
 # EDITAR TAREA
 # ==========================================================
 
 if tareas:
-
-    st.divider()
 
     with st.expander(
         "✏️ Editar una tarea",
