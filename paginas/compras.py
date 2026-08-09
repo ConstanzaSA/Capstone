@@ -18,7 +18,7 @@ from servicios.gestor_tareas import (
 )
 
 from servicios.gestor_inventario import (
-    crear_material,
+    agregar_stock,
 )
 
 
@@ -116,20 +116,13 @@ with st.expander(
 
         if crear:
 
-            if not nombre_compra.strip():
-
-                st.error(
-                    "El nombre de la compra "
-                    "es obligatorio."
-                )
-
-            else:
+            try:
 
                 crear_compra(
-                    nombre_compra=nombre_compra,
-                    cantidad=cantidad,
-                    link=link,
-                    precio=precio,
+                    nombre_compra,
+                    cantidad,
+                    link,
+                    precio,
                 )
 
                 st.success(
@@ -137,6 +130,10 @@ with st.expander(
                 )
 
                 st.rerun()
+
+            except ValueError as error:
+
+                st.error(str(error))
 
 
 # ==========================================================
@@ -148,15 +145,8 @@ st.subheader("Lista de compras")
 compras = obtener_compras()
 
 
-if not compras:
-
-    st.info(
-        "Todavía no hay compras registradas."
-    )
-
-
 # ==========================================================
-# SEPARAR POR ESTADO
+# SEPARAR ESTADOS
 # ==========================================================
 
 sin_comprar = [
@@ -175,7 +165,7 @@ compradas = [
 
 
 # ==========================================================
-# COMPRAS PENDIENTES
+# POR COMPRAR
 # ==========================================================
 
 st.markdown("### 🛒 Por comprar")
@@ -220,8 +210,7 @@ else:
             with col3:
 
                 st.write(
-                    "**Estado:** "
-                    "Sin comprar"
+                    "**Estado:** Sin comprar"
                 )
 
             if compra.get("link"):
@@ -232,70 +221,91 @@ else:
                 )
 
             # --------------------------------------------------
-            # COMPRAR
+            # REGISTRAR COMPRA
             # --------------------------------------------------
 
-            st.markdown(
-                "#### Registrar compra"
-            )
+            if ids_integrantes:
 
-            comprador = st.selectbox(
-                "¿Quién pagó?",
-                options=ids_integrantes,
-                format_func=lambda x: (
-                    nombres[x]
-                ),
-                key=(
-                    f"comprador_"
-                    f"{compra['id']}"
-                ),
-            )
-
-            if st.button(
-                "🛒 Marcar como comprado",
-                key=(
-                    f"comprar_"
-                    f"{compra['id']}"
-                ),
-                type="primary",
-                use_container_width=True,
-            ):
-
-                # ----------------------------------------------
-                # 1. MARCAR COMO COMPRADO
-                # ----------------------------------------------
-
-                marcar_comprado(
-                    compra["id"],
-                    comprador,
-                )
-
-                # ----------------------------------------------
-                # 2. AÑADIR AL INVENTARIO
-                # ----------------------------------------------
-
-                crear_material(
-                    compra["nombre_compra"],
-                    float(
-                        compra["cantidad"]
+                comprador = st.selectbox(
+                    "¿Quién pagó?",
+                    options=ids_integrantes,
+                    format_func=lambda x: (
+                        nombres[x]
                     ),
-                    "unidades",
-                    True,
-                    (
-                        f"Compra #{compra['id']}"
+                    key=(
+                        f"comprador_"
+                        f"{compra['id']}"
                     ),
                 )
 
-                st.success(
-                    "Compra registrada y "
-                    "añadida al inventario."
-                )
+                if st.button(
+                    "🛒 Marcar como comprado",
+                    key=(
+                        f"comprar_"
+                        f"{compra['id']}"
+                    ),
+                    type="primary",
+                    use_container_width=True,
+                ):
 
-                st.rerun()
+                    try:
+
+                        # ------------------------------------------
+                        # 1. MARCAR COMPRA
+                        # ------------------------------------------
+
+                        marcar_comprado(
+                            compra["id"],
+                            comprador,
+                        )
+
+                        # ------------------------------------------
+                        # 2. AGREGAR AL INVENTARIO
+                        # ------------------------------------------
+
+                        agregar_stock(
+                            material=(
+                                compra[
+                                    "nombre_compra"
+                                ]
+                            ),
+                            cantidad=float(
+                                compra[
+                                    "cantidad"
+                                ]
+                            ),
+                            unidad="unidades",
+                            responsable_id=(
+                                comprador
+                            ),
+                            observaciones=(
+                                f"Compra "
+                                f"#{compra['id']}"
+                            ),
+                        )
+
+                        st.success(
+                            "Compra registrada y "
+                            "material añadido al inventario."
+                        )
+
+                        st.rerun()
+
+                    except ValueError as error:
+
+                        st.error(
+                            str(error)
+                        )
+
+            else:
+
+                st.warning(
+                    "No hay integrantes registrados."
+                )
 
 
 # ==========================================================
-# COMPRAS REALIZADAS
+# COMPRADAS
 # ==========================================================
 
 st.markdown("### 📦 Comprado")
@@ -344,7 +354,7 @@ else:
                 )
 
                 st.write(
-                    "**Comprador:** "
+                    "**Pagó:** "
                     + nombres.get(
                         comprador_id,
                         "Desconocido",
@@ -359,15 +369,15 @@ else:
                 )
 
             st.success(
-                "📦 Añadido al inventario"
+                "📦 Este material fue añadido al inventario."
             )
 
             # --------------------------------------------------
-            # VOLVER A SIN COMPRAR
+            # DESHACER
             # --------------------------------------------------
 
             if st.button(
-                "↩️ Marcar como sin comprar",
+                "↩️ Volver a Sin comprar",
                 key=(
                     f"deshacer_"
                     f"{compra['id']}"
@@ -376,11 +386,6 @@ else:
 
                 marcar_sin_comprar(
                     compra["id"]
-                )
-
-                st.warning(
-                    "La compra volvió a "
-                    "estado 'Sin comprar'."
                 )
 
                 st.rerun()
@@ -463,19 +468,27 @@ else:
                         use_container_width=True,
                     ):
 
-                        actualizar_compra(
-                            compra["id"],
-                            nuevo_nombre,
-                            nueva_cantidad,
-                            nuevo_link,
-                            nuevo_precio,
-                        )
+                        try:
 
-                        st.success(
-                            "Compra actualizada."
-                        )
+                            actualizar_compra(
+                                compra["id"],
+                                nuevo_nombre,
+                                nueva_cantidad,
+                                nuevo_link,
+                                nuevo_precio,
+                            )
 
-                        st.rerun()
+                            st.success(
+                                "Compra actualizada."
+                            )
+
+                            st.rerun()
+
+                        except ValueError as error:
+
+                            st.error(
+                                str(error)
+                            )
 
                 with col2:
 
