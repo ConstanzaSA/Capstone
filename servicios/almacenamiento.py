@@ -13,17 +13,7 @@ def obtener_cliente_supabase() -> Client:
     return create_client(url,key)
 
 def inicializar_datos() -> None:
-    try:
-        respuesta = (
-            obtener_cliente_supabase()
-            .table("configuracion")
-            .select("clave")
-            .limit(1)
-            .execute()
-        )
-
-        st.success("Conexión con Supabase OK")
-        st.write(respuesta.data)
+    obtener_cliente_supabase().table("configuracion").select("clave").limit(1).execute()
 
     except Exception as error:
         st.error("No se pudo consultar la tabla configuracion.")
