@@ -11,7 +11,7 @@ from componentes.estilos import aplicar_estilos
 from servicios.almacenamiento import inicializar_datos
 
 st.set_page_config(
-    page_title="Seguimiento de Robótica",
+    page_title="Seguimiento de Capstone",
     page_icon="🤖",
     layout="wide",
 )
