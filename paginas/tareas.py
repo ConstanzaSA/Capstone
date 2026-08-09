@@ -1,5 +1,4 @@
 import datetime
-
 import streamlit as st
 
 from componentes.interfaz import encabezado
@@ -12,6 +11,10 @@ from servicios.gestor_tareas import (
 )
 
 
+# ==========================================================
+# ENCABEZADO
+# ==========================================================
+
 encabezado(
     "Tareas actuales",
     "Crea, asigna y actualiza actividades del proyecto",
@@ -23,6 +26,7 @@ encabezado(
 # ==========================================================
 
 integrantes = obtener_integrantes()
+tareas = obtener_tareas()
 
 nombres = {
     integrante["id"]: integrante["nombre"]
@@ -33,25 +37,22 @@ ids_integrantes = list(nombres.keys())
 
 
 def nombres_responsables(ids):
+    """Convierte una lista de IDs en nombres."""
+    
     if not ids:
         return "Sin asignar"
 
     return ", ".join(
-        nombres.get(integrante_id, "Sin asignar")
+        nombres.get(
+            integrante_id,
+            "Sin asignar",
+        )
         for integrante_id in ids
     )
 
 
 # ==========================================================
-# ESTADO DEL CHECKLIST PARA CREAR TAREA
-# ==========================================================
-
-if "checklist_nueva_tarea" not in st.session_state:
-    st.session_state.checklist_nueva_tarea = []
-
-
-# ==========================================================
-# AÑADIR TAREA
+# CREAR TAREA
 # ==========================================================
 
 with st.expander(
@@ -59,261 +60,133 @@ with st.expander(
     expanded=True,
 ):
 
-    # ------------------------------------------------------
-    # INFORMACIÓN GENERAL
-    # ------------------------------------------------------
-
-    titulo = st.text_input(
-        "Título de la tarea",
-        placeholder="Ej.: Diseñar soporte del motor",
-        key="nueva_tarea_titulo",
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        responsables = st.multiselect(
-            "Responsables",
-            options=ids_integrantes,
-            format_func=lambda x: nombres[x],
-            key="nueva_tarea_responsables",
-            help=(
-                "Puedes seleccionar uno, varios o ninguno. "
-                "Los responsables se utilizan para asignar "
-                "las casillas del checklist."
-            ),
-        )
-
-    with col2:
-
-        fecha_entrega = st.date_input(
-            "Fecha de entrega",
-            value=None,
-            format="DD/MM/YYYY",
-            key="nueva_tarea_fecha",
-        )
-
-    prioridad = st.selectbox(
-        "Prioridad",
-        ["Baja", "Media", "Alta"],
-        key="nueva_tarea_prioridad",
-    )
-
-
-    # ======================================================
-    # CHECKLIST
-    # ======================================================
-
-    st.markdown("### Checklist")
-
-    st.caption(
-        "Cada casilla debe asignarse a un integrante. "
-        "El avance individual se calculará según las "
-        "casillas completadas por cada integrante."
-    )
-
-
-    # ------------------------------------------------------
-    # MOSTRAR CHECKLISTS EXISTENTES
-    # ------------------------------------------------------
-
-    checklist_actual = st.session_state.checklist_nueva_tarea.copy()
-
-    for i, item in enumerate(checklist_actual):
-
-        with st.container(border=True):
-
-            col1, col2, col3 = st.columns([6, 3, 1])
-
-            with col1:
-
-                texto = st.text_input(
-                    "Casilla",
-                    value=item.get("texto", ""),
-                    key=f"nueva_check_texto_{i}",
-                    placeholder="Ej.: Comprar material",
-                )
-
-            with col2:
-
-                responsable_check = st.selectbox(
-                    "Responsable",
-                    options=[""] + ids_integrantes,
-                    index=(
-                        (
-                            [""] + ids_integrantes
-                        ).index(
-                            item.get(
-                                "integrante_id",
-                                "",
-                            )
-                        )
-                        if item.get("integrante_id", "")
-                        in ids_integrantes
-                        else 0
-                    ),
-                    format_func=lambda x: (
-                        "Sin asignar"
-                        if x == ""
-                        else nombres[x]
-                    ),
-                    key=f"nueva_check_responsable_{i}",
-                )
-
-            with col3:
-
-                st.write("")
-
-                if st.button(
-                    "🗑",
-                    key=f"eliminar_nueva_check_{i}",
-                    help="Eliminar esta casilla",
-                ):
-
-                    st.session_state.checklist_nueva_tarea.pop(i)
-
-                    st.rerun()
-
-
-            # Guardamos cambios del elemento
-            st.session_state.checklist_nueva_tarea[i] = {
-                "texto": texto,
-                "integrante_id": responsable_check,
-            }
-
-
-    # ------------------------------------------------------
-    # AÑADIR NUEVA CASILLA
-    # ------------------------------------------------------
-
-    if st.button(
-        "＋ Añadir checklist",
-        key="boton_agregar_checklist",
-        use_container_width=True,
+    with st.form(
+        "formulario_nueva_tarea",
+        clear_on_submit=True,
     ):
 
-        st.session_state.checklist_nueva_tarea.append(
-            {
-                "texto": "",
-                "integrante_id": "",
-            }
+        # --------------------------------------------------
+        # TÍTULO
+        # --------------------------------------------------
+
+        titulo = st.text_input(
+            "Título de la tarea",
+            placeholder="Ej.: Actualizar página web",
         )
 
-        st.rerun()
+        # --------------------------------------------------
+        # RESPONSABLES / FECHA
+        # --------------------------------------------------
 
+        col1, col2 = st.columns(2)
 
-    # ======================================================
-    # CREAR
-    # ======================================================
+        with col1:
 
-    st.markdown("")
-
-    if st.button(
-        "Crear tarea",
-        type="primary",
-        use_container_width=True,
-        key="crear_tarea",
-    ):
-
-        if not titulo.strip():
-
-            st.error(
-                "El título de la tarea es obligatorio."
-            )
-
-        else:
-
-            # ----------------------------------------------
-            # Convertir checklist a formato por integrante
-            # ----------------------------------------------
-
-            subtareas_por_integrante = {}
-
-            for item in st.session_state.checklist_nueva_tarea:
-
-                texto = item.get(
-                    "texto",
-                    "",
-                ).strip()
-
-                integrante_id = item.get(
-                    "integrante_id",
-                    "",
-                )
-
-                if not texto:
-                    continue
-
-                if not integrante_id:
-                    st.error(
-                        "Todas las casillas deben tener "
-                        "un responsable."
-                    )
-                    st.stop()
-
-                subtareas_por_integrante.setdefault(
-                    integrante_id,
-                    [],
-                ).append(
-                    {
-                        "texto": texto,
-                        "completada": False,
-                    }
-                )
-
-
-            # ----------------------------------------------
-            # Crear tarea
-            # ----------------------------------------------
-
-            crear_tarea(
-                titulo=titulo.strip(),
-                descripcion="",
-                responsables_ids=responsables,
-                fecha_entrega=(
-                    fecha_entrega.isoformat()
-                    if fecha_entrega
-                    else None
-                ),
-                prioridad=prioridad,
-                subtareas_por_integrante=(
-                    subtareas_por_integrante
+            responsables = st.multiselect(
+                "Responsables",
+                options=ids_integrantes,
+                format_func=lambda x: nombres[x],
+                help=(
+                    "Selecciona las personas responsables "
+                    "de esta tarea."
                 ),
             )
 
+        with col2:
 
-            # ----------------------------------------------
-            # Limpiar formulario
-            # ----------------------------------------------
-
-            st.session_state.checklist_nueva_tarea = []
-
-            st.session_state.pop(
-                "nueva_tarea_titulo",
-                None,
+            fecha_entrega = st.date_input(
+                "Fecha de entrega",
+                value=None,
+                format="DD/MM/YYYY",
             )
 
-            st.session_state.pop(
-                "nueva_tarea_responsables",
-                None,
+        # --------------------------------------------------
+        # PRIORIDAD
+        # --------------------------------------------------
+
+        prioridad = st.selectbox(
+            "Prioridad",
+            [
+                "Baja",
+                "Media",
+                "Alta",
+            ],
+        )
+
+        # --------------------------------------------------
+        # CHECKLIST INICIAL
+        # --------------------------------------------------
+
+        st.markdown("### Checklist")
+
+        st.caption(
+            "Puedes agregar las casillas que tendrá la tarea."
+        )
+
+        cantidad_checklist = st.number_input(
+            "Número de elementos",
+            min_value=0,
+            max_value=20,
+            value=0,
+            step=1,
+            key="cantidad_checklist_nueva",
+        )
+
+        subtareas_nuevas = []
+
+        for i in range(
+            int(cantidad_checklist)
+        ):
+
+            texto = st.text_input(
+                f"Checklist {i + 1}",
+                key=f"nueva_sub_{i}",
+                placeholder="Ej.: Revisar funcionamiento",
             )
 
-            st.session_state.pop(
-                "nueva_tarea_fecha",
-                None,
-            )
+            if texto.strip():
+                subtareas_nuevas.append(
+                    texto.strip()
+                )
 
-            st.session_state.pop(
-                "nueva_tarea_prioridad",
-                None,
-            )
+        # --------------------------------------------------
+        # CREAR
+        # --------------------------------------------------
 
-            st.success(
-                "Tarea creada correctamente."
-            )
+        crear = st.form_submit_button(
+            "Crear tarea",
+            type="primary",
+            use_container_width=True,
+        )
 
-            st.rerun()
+        if crear:
+
+            if not titulo.strip():
+
+                st.error(
+                    "El título de la tarea es obligatorio."
+                )
+
+            else:
+
+                crear_tarea(
+                    titulo=titulo,
+                    descripcion="",
+                    responsables_ids=responsables,
+                    fecha_entrega=(
+                        fecha_entrega.isoformat()
+                        if fecha_entrega
+                        else None
+                    ),
+                    prioridad=prioridad,
+                    subtareas=subtareas_nuevas,
+                )
+
+                st.success(
+                    "Tarea creada correctamente."
+                )
+
+                st.rerun()
 
 
 # ==========================================================
@@ -332,186 +205,661 @@ if not tareas:
     )
 
 
-else:
+# ==========================================================
+# MOSTRAR TAREAS
+# ==========================================================
 
-    for tarea in sorted(
-        tareas,
-        key=lambda item: (
-            item["estado"] == "Completada",
-            item.get("fecha_entrega")
-            or "9999-12-31",
-            item["titulo"].casefold(),
-        ),
+for tarea in sorted(
+    tareas,
+    key=lambda item: (
+        item.get(
+            "fecha_entrega"
+        ) or "9999-12-31",
+        item["titulo"].casefold(),
+    ),
+):
+
+    with st.container(
+        border=True
     ):
 
-        with st.container(border=True):
+        # ==================================================
+        # TÍTULO
+        # ==================================================
 
-            # ==================================================
-            # INFORMACIÓN DE LA TAREA
-            # ==================================================
+        st.markdown(
+            f"### {tarea['titulo']}"
+        )
 
-            st.markdown(
-                f"### {tarea['titulo']}"
+        # ==================================================
+        # RESPONSABLES
+        # ==================================================
+
+        st.markdown(
+            "**Responsables:** "
+            + nombres_responsables(
+                tarea.get(
+                    "responsables_ids",
+                    [],
+                )
             )
+        )
+
+        # ==================================================
+        # FECHA / PRIORIDAD
+        # ==================================================
+
+        col1, col2 = st.columns(2)
+
+        with col1:
 
             st.caption(
-                f"Entrega: "
-                f"{tarea.get('fecha_entrega') or 'Sin fecha'}"
-                f" · Prioridad: "
-                f"{tarea['prioridad']}"
-                f" · Avance global: "
-                f"{tarea['avance']}%"
-            )
-
-            st.markdown(
-                "**Responsables:** "
-                + nombres_responsables(
+                "📅 Entrega: "
+                + str(
                     tarea.get(
-                        "responsables_ids",
-                        [],
+                        "fecha_entrega"
                     )
+                    or "Sin fecha"
                 )
             )
 
-            st.markdown(
-                f"**Avance global:** "
-                f"{tarea['avance']}%"
-            )
+        with col2:
 
-
-            # ==================================================
-            # EDITAR TAREA
-            # ==================================================
-
-            with st.expander(
-                "✏️ Editar tarea",
-                expanded=False,
-            ):
-
-                titulo_editado = st.text_input(
-                    "Título",
-                    value=tarea["titulo"],
-                    key=f"titulo_{tarea['id']}",
-                )
-
-
-                responsables_editados = st.multiselect(
-                    "Responsables",
-                    options=ids_integrantes,
-                    default=[
-                        x
-                        for x in tarea.get(
-                            "responsables_ids",
-                            [],
-                        )
-                        if x in ids_integrantes
-                    ],
-                    format_func=lambda x: nombres[x],
-                    key=f"responsables_{tarea['id']}",
-                )
-
-
-                fecha_actual = None
-
-                if tarea.get("fecha_entrega"):
-
-                    try:
-
-                        fecha_actual = (
-                            datetime.datetime.strptime(
-                                tarea["fecha_entrega"],
-                                "%Y-%m-%d",
-                            ).date()
-                        )
-
-                    except ValueError:
-
-                        fecha_actual = None
-
-
-                fecha_editada = st.date_input(
-                    "Fecha de entrega",
-                    value=fecha_actual,
-                    format="DD/MM/YYYY",
-                    key=f"fecha_{tarea['id']}",
-                )
-
-
-                prioridades = [
-                    "Baja",
-                    "Media",
-                    "Alta",
-                ]
-
-                prioridad_actual = tarea.get(
+            st.caption(
+                "🚩 Prioridad: "
+                + tarea.get(
                     "prioridad",
                     "Baja",
                 )
+            )
 
+        # ==================================================
+        # CHECKLIST
+        # ==================================================
 
-                prioridad_editada = st.selectbox(
-                    "Prioridad",
-                    prioridades,
-                    index=(
-                        prioridades.index(
-                            prioridad_actual
-                        )
-                        if prioridad_actual
-                        in prioridades
-                        else 0
+        subtareas = tarea.get(
+            "subtareas",
+            [],
+        )
+
+        with st.expander(
+            f"☑️ Checklist ({len(subtareas)})",
+            expanded=False,
+        ):
+
+            if not subtareas:
+
+                st.info(
+                    "Esta tarea todavía no tiene checklist."
+                )
+
+            else:
+
+                for sub in subtareas:
+
+                    texto = sub.get(
+                        "texto",
+                        "",
+                    )
+
+                    responsable_id = sub.get(
+                        "integrante_id"
+                    )
+
+                    responsable = nombres.get(
+                        responsable_id,
+                        "Sin asignar",
+                    )
+
+                    if sub.get(
+                        "completada",
+                        False,
+                    ):
+                        icono = "☑️"
+                    else:
+                        icono = "⬜"
+
+                    st.write(
+                        f"{icono} {texto}"
+                        f" — {responsable}"
+                    )
+
+        # ==================================================
+        # EDITAR TAREA
+        # ==================================================
+
+        with st.expander(
+            "✏️ Editar tarea",
+            expanded=False,
+        ):
+
+            # --------------------------------------------------
+            # DATOS GENERALES
+            # --------------------------------------------------
+
+            titulo_editado = st.text_input(
+                "Título",
+                value=tarea["titulo"],
+                key=f"titulo_{tarea['id']}",
+            )
+
+            responsables_editados = st.multiselect(
+                "Responsables",
+                options=ids_integrantes,
+                default=[
+                    x
+                    for x in tarea.get(
+                        "responsables_ids",
+                        [],
+                    )
+                    if x in ids_integrantes
+                ],
+                format_func=lambda x: nombres[x],
+                key=f"responsables_{tarea['id']}",
+            )
+
+            # --------------------------------------------------
+            # FECHA
+            # --------------------------------------------------
+
+            fecha_actual = None
+
+            if tarea.get(
+                "fecha_entrega"
+            ):
+
+                try:
+
+                    fecha_actual = (
+                        datetime.datetime.strptime(
+                            tarea[
+                                "fecha_entrega"
+                            ],
+                            "%Y-%m-%d",
+                        ).date()
+                    )
+
+                except (
+                    ValueError,
+                    TypeError,
+                ):
+
+                    fecha_actual = None
+
+            fecha_editada = st.date_input(
+                "Fecha de entrega",
+                value=fecha_actual,
+                format="DD/MM/YYYY",
+                key=f"fecha_{tarea['id']}",
+            )
+
+            # --------------------------------------------------
+            # PRIORIDAD
+            # --------------------------------------------------
+
+            prioridades = [
+                "Baja",
+                "Media",
+                "Alta",
+            ]
+
+            prioridad_actual = tarea.get(
+                "prioridad",
+                "Baja",
+            )
+
+            prioridad_editada = st.selectbox(
+                "Prioridad",
+                prioridades,
+                index=(
+                    prioridades.index(
+                        prioridad_actual
+                    )
+                    if prioridad_actual
+                    in prioridades
+                    else 0
+                ),
+                key=f"prioridad_{tarea['id']}",
+            )
+
+            st.divider()
+
+            # ==================================================
+            # EDITAR CHECKLIST
+            # ==================================================
+
+            st.markdown(
+                "### ☑️ Checklist"
+            )
+
+            st.caption(
+                "Puedes editar, reasignar o eliminar "
+                "cada elemento."
+            )
+
+            actuales = tarea.get(
+                "subtareas",
+                [],
+            )
+
+            # --------------------------------------------------
+            # CHECKLIST EXISTENTES
+            # --------------------------------------------------
+
+            checklist_editado = {}
+
+            for i, sub in enumerate(
+                actuales
+            ):
+
+                sub_id = sub["id"]
+
+                texto_key = (
+                    f"subtexto_"
+                    f"{tarea['id']}_"
+                    f"{sub_id}"
+                )
+
+                responsable_key = (
+                    f"subresponsable_"
+                    f"{tarea['id']}_"
+                    f"{sub_id}"
+                )
+
+                eliminar_key = (
+                    f"subeliminar_"
+                    f"{tarea['id']}_"
+                    f"{sub_id}"
+                )
+
+                col1, col2, col3 = st.columns(
+                    [4, 2, 1]
+                )
+
+                # ------------------------------------------
+                # TEXTO
+                # ------------------------------------------
+
+                texto = col1.text_input(
+                    "Elemento",
+                    value=sub.get(
+                        "texto",
+                        "",
                     ),
-                    key=f"prioridad_{tarea['id']}",
+                    key=texto_key,
+                    label_visibility="collapsed",
                 )
 
+                # ------------------------------------------
+                # RESPONSABLE
+                # ------------------------------------------
 
-                # ----------------------------------------------
-                # BOTONES
-                # ----------------------------------------------
-
-                guardar, eliminar = st.columns(
-                    [4, 1]
+                responsables_disponibles = (
+                    responsables_editados
+                    if responsables_editados
+                    else ids_integrantes
                 )
 
+                responsable_actual = sub.get(
+                    "integrante_id"
+                )
 
-                with guardar:
+                if (
+                    responsable_actual
+                    not in responsables_disponibles
+                ):
 
-                    if st.button(
-                        "Guardar cambios",
-                        key=f"guardar_{tarea['id']}",
-                        type="primary",
-                        use_container_width=True,
-                    ):
+                    responsable_actual = (
+                        responsables_disponibles[0]
+                        if responsables_disponibles
+                        else None
+                    )
 
-                        actualizar_tarea(
-                            tarea_id=tarea["id"],
-                            titulo=titulo_editado,
-                            descripcion="",
-                            responsables_ids=responsables_editados,
-                            fecha_entrega=(
-                                fecha_editada.isoformat()
-                                if fecha_editada
-                                else None
+                if responsables_disponibles:
+
+                    responsable = col2.selectbox(
+                        "Responsable",
+                        options=(
+                            responsables_disponibles
+                        ),
+                        index=(
+                            responsables_disponibles.index(
+                                responsable_actual
+                            )
+                            if responsable_actual
+                            in responsables_disponibles
+                            else 0
+                        ),
+                        format_func=lambda x: (
+                            nombres[x]
+                        ),
+                        key=responsable_key,
+                        label_visibility="collapsed",
+                    )
+
+                else:
+
+                    responsable = None
+
+                    col2.caption(
+                        "Sin responsable"
+                    )
+
+                # ------------------------------------------
+                # ELIMINAR
+                # ------------------------------------------
+
+                eliminar_check = col3.checkbox(
+                    "🗑",
+                    key=eliminar_key,
+                    help="Eliminar este checklist",
+                )
+
+                # ------------------------------------------
+                # GUARDAR EN MEMORIA
+                # ------------------------------------------
+
+                if not eliminar_check:
+
+                    if responsable is not None:
+
+                        checklist_editado.setdefault(
+                            responsable,
+                            [],
+                        ).append(
+                            {
+                                "id": sub_id,
+                                "texto": texto,
+                                "completada": bool(
+                                    sub.get(
+                                        "completada",
+                                        False,
+                                    )
+                                ),
+                            }
+                        )
+
+            # ==================================================
+            # NUEVOS CHECKLIST
+            # ==================================================
+
+            nuevos_key = (
+                f"nuevos_checklist_"
+                f"{tarea['id']}"
+            )
+
+            if nuevos_key not in st.session_state:
+
+                st.session_state[
+                    nuevos_key
+                ] = []
+
+            st.markdown(
+                "#### Nuevos elementos"
+            )
+
+            # --------------------------------------------------
+            # MOSTRAR NUEVOS ELEMENTOS
+            # --------------------------------------------------
+
+            for i, nuevo in enumerate(
+                st.session_state[nuevos_key]
+            ):
+
+                col1, col2, col3 = st.columns(
+                    [4, 2, 1]
+                )
+
+                texto_key = (
+                    f"nuevo_texto_"
+                    f"{tarea['id']}_"
+                    f"{i}"
+                )
+
+                responsable_key = (
+                    f"nuevo_responsable_"
+                    f"{tarea['id']}_"
+                    f"{i}"
+                )
+
+                eliminar_key = (
+                    f"nuevo_eliminar_"
+                    f"{tarea['id']}_"
+                    f"{i}"
+                )
+
+                # ------------------------------------------
+                # TEXTO NUEVO
+                # ------------------------------------------
+
+                texto_nuevo = col1.text_input(
+                    "Nuevo checklist",
+                    value=nuevo.get(
+                        "texto",
+                        "",
+                    ),
+                    key=texto_key,
+                    placeholder=(
+                        "Ej.: Probar funcionamiento"
+                    ),
+                    label_visibility="collapsed",
+                )
+
+                # ------------------------------------------
+                # RESPONSABLE NUEVO
+                # ------------------------------------------
+
+                if responsables_editados:
+
+                    responsable_nuevo = col2.selectbox(
+                        "Responsable",
+                        options=(
+                            responsables_editados
+                        ),
+                        index=(
+                            responsables_editados.index(
+                                nuevo.get(
+                                    "integrante_id"
+                                )
+                            )
+                            if nuevo.get(
+                                "integrante_id"
+                            )
+                            in responsables_editados
+                            else 0
+                        ),
+                        format_func=lambda x: (
+                            nombres[x]
+                        ),
+                        key=responsable_key,
+                        label_visibility="collapsed",
+                    )
+
+                else:
+
+                    responsable_nuevo = None
+
+                    col2.caption(
+                        "Asigna primero un responsable"
+                    )
+
+                # ------------------------------------------
+                # ELIMINAR NUEVO
+                # ------------------------------------------
+
+                eliminar_nuevo = col3.button(
+                    "🗑",
+                    key=eliminar_key,
+                    help="Quitar este nuevo checklist",
+                )
+
+                if eliminar_nuevo:
+
+                    st.session_state[
+                        nuevos_key
+                    ].pop(i)
+
+                    st.rerun()
+
+            # ==================================================
+            # BOTÓN AÑADIR CHECKLIST
+            # ==================================================
+
+            if st.button(
+                "➕ Añadir checklist",
+                key=f"add_check_{tarea['id']}",
+                use_container_width=True,
+            ):
+
+                responsable_inicial = (
+                    responsables_editados[0]
+                    if responsables_editados
+                    else None
+                )
+
+                st.session_state[
+                    nuevos_key
+                ].append(
+                    {
+                        "texto": "",
+                        "integrante_id": (
+                            responsable_inicial
+                        ),
+                    }
+                )
+
+                st.rerun()
+
+            # ==================================================
+            # BOTONES PRINCIPALES
+            # ==================================================
+
+            st.divider()
+
+            guardar, eliminar = st.columns(
+                [4, 1]
+            )
+
+            # ==================================================
+            # GUARDAR CAMBIOS
+            # ==================================================
+
+            if guardar.button(
+                "Guardar cambios",
+                key=f"guardar_{tarea['id']}",
+                type="primary",
+                use_container_width=True,
+            ):
+
+                # --------------------------------------------------
+                # AGREGAR LOS NUEVOS CHECKLIST
+                # --------------------------------------------------
+
+                for i, nuevo in enumerate(
+                    st.session_state[nuevos_key]
+                ):
+
+                    texto_key = (
+                        f"nuevo_texto_"
+                        f"{tarea['id']}_"
+                        f"{i}"
+                    )
+
+                    responsable_key = (
+                        f"nuevo_responsable_"
+                        f"{tarea['id']}_"
+                        f"{i}"
+                    )
+
+                    texto_nuevo = (
+                        st.session_state.get(
+                            texto_key,
+                            "",
+                        )
+                    )
+
+                    responsable_nuevo = (
+                        st.session_state.get(
+                            responsable_key,
+                            nuevo.get(
+                                "integrante_id"
                             ),
-                            prioridad=prioridad_editada,
                         )
+                    )
 
-                        st.success(
-                            "Tarea actualizada correctamente."
-                        )
-
-                        st.rerun()
-
-
-                with eliminar:
-
-                    if st.button(
-                        "Eliminar",
-                        key=f"eliminar_{tarea['id']}",
-                        use_container_width=True,
+                    if (
+                        texto_nuevo
+                        and responsable_nuevo
+                        is not None
                     ):
 
-                        eliminar_tarea(
-                            tarea["id"]
+                        checklist_editado.setdefault(
+                            responsable_nuevo,
+                            [],
+                        ).append(
+                            {
+                                "id": None,
+                                "texto": (
+                                    texto_nuevo.strip()
+                                ),
+                                "completada": False,
+                            }
                         )
 
-                        st.rerun()
+                # --------------------------------------------------
+                # ACTUALIZAR TAREA
+                # --------------------------------------------------
+
+                actualizar_tarea(
+                    tarea_id=tarea["id"],
+                    titulo=titulo_editado,
+                    descripcion="",
+                    responsables_ids=(
+                        responsables_editados
+                    ),
+                    fecha_entrega=(
+                        fecha_editada.isoformat()
+                        if fecha_editada
+                        else None
+                    ),
+                    prioridad=prioridad_editada,
+                    subtareas_por_integrante=(
+                        checklist_editado
+                    ),
+                )
+
+                # --------------------------------------------------
+                # LIMPIAR NUEVOS CHECKLIST
+                # --------------------------------------------------
+
+                st.session_state[
+                    nuevos_key
+                ] = []
+
+                st.success(
+                    "Tarea actualizada correctamente."
+                )
+
+                st.rerun()
+
+            # ==================================================
+            # ELIMINAR TAREA
+            # ==================================================
+
+            if eliminar.button(
+                "Eliminar",
+                key=f"eliminar_tarea_{tarea['id']}",
+                use_container_width=True,
+            ):
+
+                eliminar_tarea(
+                    tarea["id"]
+                )
+
+                # Limpiar estado asociado
+                st.session_state.pop(
+                    nuevos_key,
+                    None,
+                )
+
+                st.rerun()
