@@ -22,13 +22,14 @@ def inicializar_datos() -> None:
             .execute()
         )
 
-        print("CONEXIÓN SUPABASE OK")
-        print("DATOS:", respuesta.data)
+        st.success("Conexión con Supabase OK")
+        st.write(respuesta.data)
 
     except Exception as error:
-        raise RuntimeError(
-            f"ERROR REAL DE SUPABASE: {error}"
-        ) from error
+        st.error("No se pudo consultar la tabla configuracion.")
+        st.write("Tipo de error:", type(error).__name__)
+        st.write("Detalles:", str(error))
+        st.stop()
 
 def cargar_filas(tabla:str, orden:str|None=None)->list[dict[str,Any]]:
     q=obtener_cliente_supabase().table(tabla).select("*")
