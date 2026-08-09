@@ -254,138 +254,11 @@ if not tareas:
     st.info(
         "Todavía no hay tareas registradas."
     )
-
-else:
-
-    # ======================================================
-    # MOSTRAR TAREAS
-    # ======================================================
-
-    for tarea in sorted(
-        tareas,
-        key=lambda item: (
-            item.get(
-                "fecha_entrega"
-            ) or "9999-12-31",
-            item["titulo"].casefold(),
-        ),
-    ):
-
-        with st.container(
-            border=True
-        ):
-
-            # --------------------------------------------------
-            # TÍTULO
-            # --------------------------------------------------
-
-            st.markdown(
-                f"### {tarea['titulo']}"
-            )
-
-            # --------------------------------------------------
-            # RESPONSABLES
-            # --------------------------------------------------
-
-            st.markdown(
-                "**Responsables:** "
-                + nombres_responsables(
-                    tarea.get(
-                        "responsables_ids",
-                        [],
-                    )
-                )
-            )
-
-            # --------------------------------------------------
-            # FECHA / PRIORIDAD
-            # --------------------------------------------------
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-                st.caption(
-                    "📅 Entrega: "
-                    + str(
-                        tarea.get(
-                            "fecha_entrega"
-                        )
-                        or "Sin fecha"
-                    )
-                )
-
-            with col2:
-
-                st.caption(
-                    "🚩 Prioridad: "
-                    + tarea.get(
-                        "prioridad",
-                        "Baja",
-                    )
-                )
-
-            # --------------------------------------------------
-            # ACTIVIDADES
-            # --------------------------------------------------
-
-            subtareas = tarea.get(
-                "subtareas",
-                [],
-            )
-
-            with st.expander(
-                f"☑️ Actividades ({len(subtareas)})",
-                expanded=False,
-            ):
-
-                if not subtareas:
-
-                    st.info(
-                        "Esta tarea todavía "
-                        "no tiene actividades."
-                    )
-
-                else:
-
-                    for sub in subtareas:
-
-                        texto = sub.get(
-                            "texto",
-                            "",
-                        )
-
-                        responsable_id = sub.get(
-                            "integrante_id"
-                        )
-
-                        responsable = nombres.get(
-                            responsable_id,
-                            "Sin asignar",
-                        )
-
-                        if sub.get(
-                            "completada",
-                            False,
-                        ):
-
-                            icono = "☑️"
-
-                        else:
-
-                            icono = "⬜"
-
-                        st.write(
-                            f"{icono} {texto}"
-                            f" — {responsable}"
-                        )
-
-
 # ==========================================================
 # EDITAR TAREA
 # ==========================================================
 
-if tareas:
+elif tareas:
 
     st.divider()
 
@@ -973,3 +846,130 @@ if tareas:
                 )
 
                 st.rerun()
+
+else:
+    
+    # ======================================================
+    # MOSTRAR TAREAS
+    # ======================================================
+
+    for tarea in sorted(
+        tareas,
+        key=lambda item: (
+            item.get(
+                "fecha_entrega"
+            ) or "9999-12-31",
+            item["titulo"].casefold(),
+        ),
+    ):
+
+        with st.container(
+            border=True
+        ):
+
+            # --------------------------------------------------
+            # TÍTULO
+            # --------------------------------------------------
+
+            st.markdown(
+                f"### {tarea['titulo']}"
+            )
+
+            # --------------------------------------------------
+            # RESPONSABLES
+            # --------------------------------------------------
+
+            st.markdown(
+                "**Responsables:** "
+                + nombres_responsables(
+                    tarea.get(
+                        "responsables_ids",
+                        [],
+                    )
+                )
+            )
+
+            # --------------------------------------------------
+            # FECHA / PRIORIDAD
+            # --------------------------------------------------
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.caption(
+                    "📅 Entrega: "
+                    + str(
+                        tarea.get(
+                            "fecha_entrega"
+                        )
+                        or "Sin fecha"
+                    )
+                )
+
+            with col2:
+
+                st.caption(
+                    "🚩 Prioridad: "
+                    + tarea.get(
+                        "prioridad",
+                        "Baja",
+                    )
+                )
+
+            # --------------------------------------------------
+            # ACTIVIDADES
+            # --------------------------------------------------
+
+            subtareas = tarea.get(
+                "subtareas",
+                [],
+            )
+
+            with st.expander(
+                f"☑️ Actividades ({len(subtareas)})",
+                expanded=False,
+            ):
+
+                if not subtareas:
+
+                    st.info(
+                        "Esta tarea todavía "
+                        "no tiene actividades."
+                    )
+
+                else:
+
+                    for sub in subtareas:
+
+                        texto = sub.get(
+                            "texto",
+                            "",
+                        )
+
+                        responsable_id = sub.get(
+                            "integrante_id"
+                        )
+
+                        responsable = nombres.get(
+                            responsable_id,
+                            "Sin asignar",
+                        )
+
+                        if sub.get(
+                            "completada",
+                            False,
+                        ):
+
+                            icono = "☑️"
+
+                        else:
+
+                            icono = "⬜"
+
+                        st.write(
+                            f"{icono} {texto}"
+                            f" — {responsable}"
+                        )
+
+
