@@ -128,7 +128,7 @@ else:
             #    )
 
             #    st.success(
-                    "Integrante actualizado."
+            #        "Integrante actualizado."
             #    )
 
             #    st.rerun()
