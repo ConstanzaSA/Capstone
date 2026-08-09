@@ -12,7 +12,7 @@ from servicios.almacenamiento import (
 
 
 # ==========================================================
-# COMPRAS
+# OBTENER COMPRAS
 # ==========================================================
 
 def obtener_compras() -> list[dict[str, Any]]:
@@ -34,10 +34,9 @@ def crear_compra(
     cantidad: float,
     link: str,
     precio: float,
+    comprador: str | None,
+    estado: str,
 ) -> None:
-    """
-    Crea una nueva compra pendiente.
-    """
 
     nombre_compra = nombre_compra.strip()
 
@@ -64,54 +63,8 @@ def crear_compra(
             "cantidad": cantidad,
             "link": link.strip(),
             "precio": precio,
-            "comprador": None,
-            "estado": "Sin comprar",
-        },
-    )
-
-
-# ==========================================================
-# MARCAR COMO COMPRADO
-# ==========================================================
-
-def marcar_comprado(
-    compra_id: str,
-    comprador: str,
-) -> None:
-    """
-    Marca una compra como comprada y registra
-    quién la pagó.
-    """
-
-    actualizar_fila(
-        "compras",
-        "id",
-        compra_id,
-        {
             "comprador": comprador,
-            "estado": "Comprado",
-        },
-    )
-
-
-# ==========================================================
-# VOLVER A SIN COMPRAR
-# ==========================================================
-
-def marcar_sin_comprar(
-    compra_id: str,
-) -> None:
-    """
-    Devuelve una compra al estado 'Sin comprar'.
-    """
-
-    actualizar_fila(
-        "compras",
-        "id",
-        compra_id,
-        {
-            "comprador": None,
-            "estado": "Sin comprar",
+            "estado": estado,
         },
     )
 
@@ -126,10 +79,9 @@ def actualizar_compra(
     cantidad: float,
     link: str,
     precio: float,
+    comprador: str | None,
+    estado: str,
 ) -> None:
-    """
-    Actualiza los datos de una compra.
-    """
 
     nombre_compra = nombre_compra.strip()
 
@@ -157,6 +109,8 @@ def actualizar_compra(
             "cantidad": cantidad,
             "link": link.strip(),
             "precio": precio,
+            "comprador": comprador,
+            "estado": estado,
         },
     )
 
@@ -168,9 +122,6 @@ def actualizar_compra(
 def eliminar_compra(
     compra_id: str,
 ) -> None:
-    """
-    Elimina una compra.
-    """
 
     eliminar_fila(
         "compras",
