@@ -74,7 +74,7 @@ with columnas[3]:
     tarjeta_indicador(
         "Próxima Presentación",
         proxima_entrega or "Sin definir",
-        "Fecha del proyecto",
+        "Fecha de presentación",
     )
 
 st.subheader("Progreso por integrante")
