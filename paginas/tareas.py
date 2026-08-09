@@ -38,7 +38,7 @@ ids_integrantes = list(nombres.keys())
 
 def nombres_responsables(ids):
     """Convierte una lista de IDs en nombres."""
-    
+
     if not ids:
         return "Sin asignar"
 
@@ -114,6 +114,93 @@ with st.expander(
         )
 
         # --------------------------------------------------
+        # ACTIVIDADES
+        # --------------------------------------------------
+
+        st.markdown(
+            "### ☑️ Actividades"
+        )
+
+        st.caption(
+            "Añade las actividades que componen esta tarea "
+            "y asigna cada una a un integrante."
+        )
+
+        cantidad_actividades = st.number_input(
+            "Cantidad de actividades",
+            min_value=0,
+            max_value=20,
+            value=0,
+            step=1,
+            key="cantidad_actividades_nueva",
+        )
+
+        subtareas_nuevas = []
+
+        for i in range(
+            int(cantidad_actividades)
+        ):
+
+            st.markdown(
+                f"**Actividad {i + 1}**"
+            )
+
+            col1, col2 = st.columns(
+                [4, 2]
+            )
+
+            with col1:
+
+                texto_actividad = st.text_input(
+                    "Actividad",
+                    placeholder=(
+                        "Ej.: Revisar funcionamiento"
+                    ),
+                    key=f"nueva_actividad_{i}",
+                    label_visibility="collapsed",
+                )
+
+            with col2:
+
+                if responsables:
+
+                    responsable_actividad = st.selectbox(
+                        "Responsable",
+                        options=responsables,
+                        format_func=lambda x: (
+                            nombres[x]
+                        ),
+                        key=(
+                            f"nuevo_responsable_"
+                            f"{i}"
+                        ),
+                        label_visibility="collapsed",
+                    )
+
+                else:
+
+                    responsable_actividad = None
+
+                    st.caption(
+                        "Selecciona primero "
+                        "un responsable"
+                    )
+
+            if texto_actividad.strip():
+
+                subtareas_nuevas.append(
+                    {
+                        "texto": (
+                            texto_actividad.strip()
+                        ),
+                        "integrante_id": (
+                            responsable_actividad
+                        ),
+                        "completada": False,
+                    }
+                )
+
+        # --------------------------------------------------
         # CREAR
         # --------------------------------------------------
 
@@ -168,143 +255,187 @@ if not tareas:
         "Todavía no hay tareas registradas."
     )
 
+else:
 
-# ==========================================================
-# MOSTRAR TAREAS
-# ==========================================================
+    # ======================================================
+    # MOSTRAR TAREAS
+    # ======================================================
 
-for tarea in sorted(
-    tareas,
-    key=lambda item: (
-        item.get(
-            "fecha_entrega"
-        ) or "9999-12-31",
-        item["titulo"].casefold(),
-    ),
-):
-
-    with st.container(
-        border=True
+    for tarea in sorted(
+        tareas,
+        key=lambda item: (
+            item.get(
+                "fecha_entrega"
+            ) or "9999-12-31",
+            item["titulo"].casefold(),
+        ),
     ):
 
-        # ==================================================
-        # TÍTULO
-        # ==================================================
+        with st.container(
+            border=True
+        ):
 
-        st.markdown(
-            f"### {tarea['titulo']}"
-        )
+            # --------------------------------------------------
+            # TÍTULO
+            # --------------------------------------------------
 
-        # ==================================================
-        # RESPONSABLES
-        # ==================================================
-
-        st.markdown(
-            "**Responsables:** "
-            + nombres_responsables(
-                tarea.get(
-                    "responsables_ids",
-                    [],
-                )
+            st.markdown(
+                f"### {tarea['titulo']}"
             )
-        )
 
-        # ==================================================
-        # FECHA / PRIORIDAD
-        # ==================================================
+            # --------------------------------------------------
+            # RESPONSABLES
+            # --------------------------------------------------
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            st.caption(
-                "📅 Entrega: "
-                + str(
+            st.markdown(
+                "**Responsables:** "
+                + nombres_responsables(
                     tarea.get(
-                        "fecha_entrega"
+                        "responsables_ids",
+                        [],
                     )
-                    or "Sin fecha"
                 )
             )
 
-        with col2:
+            # --------------------------------------------------
+            # FECHA / PRIORIDAD
+            # --------------------------------------------------
 
-            st.caption(
-                "🚩 Prioridad: "
-                + tarea.get(
-                    "prioridad",
-                    "Baja",
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.caption(
+                    "📅 Entrega: "
+                    + str(
+                        tarea.get(
+                            "fecha_entrega"
+                        )
+                        or "Sin fecha"
+                    )
                 )
+
+            with col2:
+
+                st.caption(
+                    "🚩 Prioridad: "
+                    + tarea.get(
+                        "prioridad",
+                        "Baja",
+                    )
+                )
+
+            # --------------------------------------------------
+            # ACTIVIDADES
+            # --------------------------------------------------
+
+            subtareas = tarea.get(
+                "subtareas",
+                [],
             )
 
-        # ==================================================
-        # CHECKLIST
-        # ==================================================
-        
-        subtareas = tarea.get(
-            "subtareas",
-            [],
+            with st.expander(
+                f"☑️ Actividades ({len(subtareas)})",
+                expanded=False,
+            ):
+
+                if not subtareas:
+
+                    st.info(
+                        "Esta tarea todavía "
+                        "no tiene actividades."
+                    )
+
+                else:
+
+                    for sub in subtareas:
+
+                        texto = sub.get(
+                            "texto",
+                            "",
+                        )
+
+                        responsable_id = sub.get(
+                            "integrante_id"
+                        )
+
+                        responsable = nombres.get(
+                            responsable_id,
+                            "Sin asignar",
+                        )
+
+                        if sub.get(
+                            "completada",
+                            False,
+                        ):
+
+                            icono = "☑️"
+
+                        else:
+
+                            icono = "⬜"
+
+                        st.write(
+                            f"{icono} {texto}"
+                            f" — {responsable}"
+                        )
+
+
+# ==========================================================
+# EDITAR TAREA
+# ==========================================================
+
+if tareas:
+
+    st.divider()
+
+    with st.expander(
+        "✏️ Editar una tarea",
+        expanded=False,
+    ):
+
+        # --------------------------------------------------
+        # SELECCIONAR TAREA
+        # --------------------------------------------------
+
+        opciones_tareas = {
+            tarea["id"]: tarea["titulo"]
+            for tarea in tareas
+        }
+
+        tarea_seleccionada_id = st.selectbox(
+            "Selecciona la tarea que quieres editar",
+            options=list(
+                opciones_tareas.keys()
+            ),
+            format_func=lambda x: (
+                opciones_tareas[x]
+            ),
         )
 
-        with st.expander(
-            f"☑️ Actividades ({len(subtareas)})",
-            expanded=False,
-        ):
+        tarea = next(
+            (
+                t
+                for t in tareas
+                if t["id"]
+                == tarea_seleccionada_id
+            ),
+            None,
+        )
 
-            if not subtareas:
+        if tarea is not None:
 
-                st.info(
-                    "Esta tarea todavía no tiene actividades."
-                )
-
-            else:
-
-                for sub in subtareas:
-
-                    texto = sub.get(
-                        "texto",
-                        "",
-                    )
-
-                    responsable_id = sub.get(
-                        "integrante_id"
-                    )
-
-                    responsable = nombres.get(
-                        responsable_id,
-                        "Sin asignar",
-                    )
-
-                    if sub.get(
-                        "completada",
-                        False,
-                    ):
-                        icono = "☑️"
-                    else:
-                        icono = "⬜"
-
-                    st.write(
-                        f"{icono} {texto}"
-                        f" — {responsable}"
-                    )
-
-        # ==================================================
-        # EDITAR TAREA
-        # ==================================================
-
-        with st.expander(
-            "✏️ Editar tarea",
-            expanded=False,
-        ):
-
-            # --------------------------------------------------
+            # ==================================================
             # DATOS GENERALES
-            # --------------------------------------------------
+            # ==================================================
 
             titulo_editado = st.text_input(
                 "Título",
                 value=tarea["titulo"],
-                key=f"titulo_{tarea['id']}",
+                key=(
+                    f"titulo_editar_"
+                    f"{tarea['id']}"
+                ),
             )
 
             responsables_editados = st.multiselect(
@@ -319,12 +450,15 @@ for tarea in sorted(
                     if x in ids_integrantes
                 ],
                 format_func=lambda x: nombres[x],
-                key=f"responsables_{tarea['id']}",
+                key=(
+                    f"responsables_editar_"
+                    f"{tarea['id']}"
+                ),
             )
 
-            # --------------------------------------------------
+            # ==================================================
             # FECHA
-            # --------------------------------------------------
+            # ==================================================
 
             fecha_actual = None
 
@@ -354,12 +488,15 @@ for tarea in sorted(
                 "Fecha de entrega",
                 value=fecha_actual,
                 format="DD/MM/YYYY",
-                key=f"fecha_{tarea['id']}",
+                key=(
+                    f"fecha_editar_"
+                    f"{tarea['id']}"
+                ),
             )
 
-            # --------------------------------------------------
+            # ==================================================
             # PRIORIDAD
-            # --------------------------------------------------
+            # ==================================================
 
             prioridades = [
                 "Baja",
@@ -383,7 +520,10 @@ for tarea in sorted(
                     in prioridades
                     else 0
                 ),
-                key=f"prioridad_{tarea['id']}",
+                key=(
+                    f"prioridad_editar_"
+                    f"{tarea['id']}"
+                ),
             )
 
             st.divider()
@@ -397,7 +537,9 @@ for tarea in sorted(
             )
 
             st.caption(
-                "Procura asignar la actividad a un miembro del equipo para que aparezca en su feed!"
+                "Procura asignar la actividad a un "
+                "miembro del equipo para que aparezca "
+                "en su feed!"
             )
 
             actuales = tarea.get(
@@ -515,7 +657,7 @@ for tarea in sorted(
                 eliminar_check = col3.checkbox(
                     "🗑",
                     key=eliminar_key,
-                    help="Eliminar este checklist",
+                    help="Eliminar esta actividad",
                 )
 
                 # ------------------------------------------
@@ -543,7 +685,7 @@ for tarea in sorted(
                         )
 
             # ==================================================
-            # NUEVOS CHECKLIST
+            # NUEVAS ACTIVIDADES
             # ==================================================
 
             nuevos_key = (
@@ -558,7 +700,7 @@ for tarea in sorted(
                 ] = []
 
             st.markdown(
-                "#### Nuevos elementos"
+                "#### Nuevas actividades"
             )
 
             # --------------------------------------------------
@@ -596,7 +738,7 @@ for tarea in sorted(
                 # ------------------------------------------
 
                 texto_nuevo = col1.text_input(
-                    "Nuevo checklist",
+                    "Nueva actividad",
                     value=nuevo.get(
                         "texto",
                         "",
@@ -653,7 +795,7 @@ for tarea in sorted(
                 eliminar_nuevo = col3.button(
                     "🗑",
                     key=eliminar_key,
-                    help="Quitar este nuevo checklist",
+                    help="Quitar esta nueva actividad",
                 )
 
                 if eliminar_nuevo:
@@ -665,7 +807,7 @@ for tarea in sorted(
                     st.rerun()
 
             # ==================================================
-            # BOTÓN AÑADIR CHECKLIST
+            # BOTÓN AÑADIR ACTIVIDAD
             # ==================================================
 
             if st.button(
@@ -709,13 +851,16 @@ for tarea in sorted(
 
             if guardar.button(
                 "Guardar cambios",
-                key=f"guardar_{tarea['id']}",
+                key=(
+                    f"guardar_editar_"
+                    f"{tarea['id']}"
+                ),
                 type="primary",
                 use_container_width=True,
             ):
 
                 # --------------------------------------------------
-                # AGREGAR LOS NUEVOS CHECKLIST
+                # AGREGAR NUEVAS ACTIVIDADES
                 # --------------------------------------------------
 
                 for i, nuevo in enumerate(
@@ -792,7 +937,7 @@ for tarea in sorted(
                 )
 
                 # --------------------------------------------------
-                # LIMPIAR NUEVOS CHECKLIST
+                # LIMPIAR NUEVAS ACTIVIDADES
                 # --------------------------------------------------
 
                 st.session_state[
@@ -810,8 +955,11 @@ for tarea in sorted(
             # ==================================================
 
             if eliminar.button(
-                "Eliminar",
-                key=f"eliminar_tarea_{tarea['id']}",
+                "Eliminar tarea",
+                key=(
+                    f"eliminar_tarea_"
+                    f"{tarea['id']}"
+                ),
                 use_container_width=True,
             ):
 
@@ -819,7 +967,6 @@ for tarea in sorted(
                     tarea["id"]
                 )
 
-                # Limpiar estado asociado
                 st.session_state.pop(
                     nuevos_key,
                     None,
