@@ -77,7 +77,7 @@ with columnas[3]:
         "Fecha de presentación",
     )
 
-st.subheader("Progreso por integrante")
+st.subheader("Progreso del Proyecto")
 
 df = pd.DataFrame(resumen)
 
