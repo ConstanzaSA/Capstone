@@ -72,7 +72,7 @@ with columnas[2]:
 
 with columnas[3]:
     tarjeta_indicador(
-        "Próxima entrega",
+        "Próxima Presentación",
         proxima_entrega or "Sin definir",
         "Fecha del proyecto",
     )
