@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
 from servicios.almacenamiento import (
-    actualizar_fila,
     cargar_filas,
-    eliminar_fila,
     insertar_fila,
-    obtener_fila,
+    actualizar_fila,
+    eliminar_fila,
     obtener_cliente_supabase,
 )
 
 
 def ahora() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now().isoformat(timespec="seconds")
 
 
 # ==========================================================
@@ -23,118 +22,438 @@ def ahora() -> str:
 # ==========================================================
 
 def obtener_integrantes() -> list[dict[str, Any]]:
-    return cargar_filas("integrantes", "nombre")
+    return cargar_filas("integrantes", "fecha_actualizacion")
 
 
-def guardar_integrantes(integrantes: list[dict[str, Any]]) -> None:
-    for integrante in integrantes:
-        actualizar_fila(
-            "integrantes",
-            "id",
-            integrante["id"],
-            {
-                "nombre": integrante.get("nombre", "").strip(),
-                "rol": integrante.get("rol", "").strip(),
-                "fecha_actualizacion": ahora(),
-            },
-        )
-        registrar_evento(
-            "Perfil",
-            None,
-            integrante.get("nombre", "Integrante"),
-            "Se actualizaron los datos del integrante.",
-        )
+def crear_integrante(nombre: str, rol: str) -> dict[str, Any]:
+    nombre = nombre.strip()
+    rol = rol.strip()
 
+    if not nombre:
+        raise ValueError("El nombre del integrante es obligatorio.")
 
-# ==========================================================
-# TAREAS Y MULTIASIGNACIÓN
-# ==========================================================
-
-def _asignaciones_de_tarea(tarea_id: str) -> list[str]:
-    filas = (
-        obtener_cliente_supabase()
-        .table("tarea_integrantes")
-        .select("integrante_id")
-        .eq("tarea_id", tarea_id)
-        .execute()
-        .data
-        or []
+    return insertar_fila(
+        "integrantes",
+        {
+            "id": f"integrante_{uuid4().hex}",
+            "nombre": nombre,
+            "rol": rol,
+            "fecha_actualizacion": ahora(),
+        },
     )
-    return [fila["integrante_id"] for fila in filas]
 
 
-def _guardar_asignaciones(tarea_id: str, integrante_ids: list[str] | None) -> None:
-    integrante_ids = list(dict.fromkeys(integrante_ids or []))
+def actualizar_integrante(
+    integrante_id: str,
+    nombre: str,
+    rol: str,
+) -> dict[str, Any]:
+    nombre = nombre.strip()
+    rol = rol.strip()
 
-    # Reemplazamos las asignaciones actuales por las nuevas.
-    obtener_cliente_supabase().table("tarea_integrantes").delete().eq("tarea_id", tarea_id).execute()
+    if not nombre:
+        raise ValueError("El nombre del integrante es obligatorio.")
 
-    if integrante_ids:
-        obtener_cliente_supabase().table("tarea_integrantes").insert(
-            [
-                {"tarea_id": tarea_id, "integrante_id": integrante_id}
-                for integrante_id in integrante_ids
-            ]
-        ).execute()
+    return actualizar_fila(
+        "integrantes",
+        "id",
+        integrante_id,
+        {
+            "nombre": nombre,
+            "rol": rol,
+            "fecha_actualizacion": ahora(),
+        },
+    )
+
+
+# ==========================================================
+# TAREAS Y SUBTAREAS
+# ==========================================================
+
+def _responsables_por_tarea() -> dict[str, list[str]]:
+    relaciones = cargar_filas("tarea_integrantes")
+    resultado: dict[str, list[str]] = {}
+
+    for relacion in relaciones:
+        resultado.setdefault(relacion["tarea_id"], []).append(
+            relacion["integrante_id"]
+        )
+
+    return resultado
+
+
+def _subtareas_por_tarea() -> dict[str, list[dict[str, Any]]]:
+    """
+    Las subtareas se guardan en la tabla 'subtareas'.
+
+    Cada subtarea tiene:
+      id, tarea_id, integrante_id, texto, completada,
+      fecha_actualizacion
+
+    La misma subtarea puede existir para distintos integrantes.
+    """
+    try:
+        filas = cargar_filas("subtareas")
+    except Exception:
+        return {}
+
+    resultado: dict[str, list[dict[str, Any]]] = {}
+
+    for fila in filas:
+        resultado.setdefault(fila["tarea_id"], []).append(fila)
+
+    return resultado
 
 
 def obtener_tareas() -> list[dict[str, Any]]:
-    tareas = cargar_filas("tareas", "fecha_entrega")
+    tareas = cargar_filas("tareas", "fecha_actualizacion")
+    responsables = _responsables_por_tarea()
+    subtareas = _subtareas_por_tarea()
 
     for tarea in tareas:
-        responsable_ids = _asignaciones_de_tarea(tarea["id"])
+        ids = responsables.get(tarea["id"], [])
 
-        # Compatibilidad con datos antiguos que tenían un solo responsable_id.
-        if not responsable_ids and tarea.get("responsable_id"):
-            responsable_ids = [tarea["responsable_id"]]
-            _guardar_asignaciones(tarea["id"], responsable_ids)
+        if not ids and tarea.get("responsable_id"):
+            ids = [tarea["responsable_id"]]
 
-        tarea["responsable_ids"] = responsable_ids
-        # Campo legado para que cualquier parte antigua de la aplicación no falle.
-        tarea["responsable_id"] = responsable_ids[0] if len(responsable_ids) == 1 else None
-        tarea.setdefault("fecha_entrega", "")
+        tarea["responsables_ids"] = ids
+        tarea["responsable_id"] = ids[0] if ids else None
+
+        lista_subtareas = subtareas.get(tarea["id"], [])
+        tarea["subtareas"] = lista_subtareas
+
+        # Progreso individual.
+        progreso_individual: dict[str, int] = {}
+
+        for integrante_id in ids:
+            propias = [
+                sub
+                for sub in lista_subtareas
+                if sub.get("integrante_id") == integrante_id
+            ]
+
+            if propias:
+                progreso_individual[integrante_id] = round(
+                    100
+                    * sum(
+                        bool(sub.get("completada"))
+                        for sub in propias
+                    )
+                    / len(propias)
+                )
+            else:
+                progreso_individual[integrante_id] = 0
+
+        tarea["progreso_individual"] = progreso_individual
+
+        # El avance global de la tarea es el promedio de los
+        # avances individuales de todos sus responsables.
+        tarea["avance"] = (
+            round(
+                sum(progreso_individual.values())
+                / len(progreso_individual)
+            )
+            if progreso_individual
+            else 0
+        )
+
+        if tarea["avance"] == 100 and ids:
+            tarea["estado"] = "Completada"
+        elif tarea["avance"] > 0:
+            tarea["estado"] = "En progreso"
+        else:
+            tarea["estado"] = "Pendiente"
+
+        tarea.setdefault("descripcion", "")
+        tarea.setdefault("fecha_entrega", None)
         tarea.setdefault("prioridad", "Baja")
-        tarea.setdefault("estado", "Pendiente")
-        tarea.setdefault("avance", 0)
 
     return tareas
 
+
+def obtener_tarea(tarea_id: str) -> dict[str, Any] | None:
+    return next(
+        (tarea for tarea in obtener_tareas() if tarea["id"] == tarea_id),
+        None,
+    )
+
+
+def _reemplazar_asignaciones(
+    tarea_id: str,
+    responsables_ids: list[str],
+) -> None:
+    actuales = [
+        fila
+        for fila in cargar_filas("tarea_integrantes")
+        if fila["tarea_id"] == tarea_id
+    ]
+
+    for fila in actuales:
+        (
+            obtener_cliente_supabase()
+            .table("tarea_integrantes")
+            .delete()
+            .eq("tarea_id", tarea_id)
+            .eq("integrante_id", fila["integrante_id"])
+            .execute()
+        )
+
+    for integrante_id in sorted(set(responsables_ids)):
+        insertar_fila(
+            "tarea_integrantes",
+            {
+                "tarea_id": tarea_id,
+                "integrante_id": integrante_id,
+                "fecha_asignacion": ahora(),
+            },
+        )
+
+
+def _crear_subtareas_iniciales(
+    tarea_id: str,
+    responsables_ids: list[str],
+    textos: list[str],
+) -> None:
+    textos_limpios = [
+        texto.strip()
+        for texto in textos
+        if texto.strip()
+    ]
+
+    for integrante_id in responsables_ids:
+        for texto in textos_limpios:
+            insertar_fila(
+                "subtareas",
+                {
+                    "id": uuid4().hex,
+                    "tarea_id": tarea_id,
+                    "integrante_id": integrante_id,
+                    "texto": texto,
+                    "completada": False,
+                    "fecha_actualizacion": ahora(),
+                },
+            )
+
+
+def crear_tarea(
+    titulo: str,
+    descripcion: str,
+    responsables_ids: list[str] | None,
+    fecha_entrega: str | None,
+    prioridad: str,
+    subtareas: list[str] | None = None,
+) -> dict[str, Any]:
+    titulo = titulo.strip()
+    responsables_ids = list(dict.fromkeys(responsables_ids or []))
+
+    if not titulo:
+        raise ValueError("El título de la tarea es obligatorio.")
+
+    tarea = insertar_fila(
+        "tareas",
+        {
+            "id": uuid4().hex,
+            "titulo": titulo,
+            "descripcion": descripcion.strip(),
+            "responsable_id": (
+                responsables_ids[0]
+                if responsables_ids
+                else None
+            ),
+            "fecha_entrega": fecha_entrega or None,
+            "prioridad": prioridad,
+            "estado": "Pendiente",
+            "avance": 0,
+            "fecha_creacion": ahora(),
+            "fecha_actualizacion": ahora(),
+        },
+    )
+
+    _reemplazar_asignaciones(tarea["id"], responsables_ids)
+
+    if responsables_ids and subtareas:
+        _crear_subtareas_iniciales(
+            tarea["id"],
+            responsables_ids,
+            subtareas,
+        )
+
+    registrar_historial(
+        "Creación",
+        tarea,
+        (
+            "Responsables: "
+            + ", ".join(responsables_ids)
+            if responsables_ids
+            else "Sin responsables"
+        ),
+    )
+
+    return obtener_tarea(tarea["id"]) or tarea
+
+
+def _eliminar_subtareas(tarea_id: str) -> None:
+    try:
+        (
+            obtener_cliente_supabase()
+            .table("subtareas")
+            .delete()
+            .eq("tarea_id", tarea_id)
+            .execute()
+        )
+    except Exception:
+        pass
+
+
+def _guardar_subtareas(
+    tarea_id: str,
+    subtareas_por_integrante: dict[str, list[dict[str, Any]]],
+) -> None:
+    _eliminar_subtareas(tarea_id)
+
+    for integrante_id, subtareas in subtareas_por_integrante.items():
+        for subtarea in subtareas:
+            texto = str(subtarea.get("texto", "")).strip()
+
+            if not texto:
+                continue
+
+            insertar_fila(
+                "subtareas",
+                {
+                    "id": subtarea.get("id") or uuid4().hex,
+                    "tarea_id": tarea_id,
+                    "integrante_id": integrante_id,
+                    "texto": texto,
+                    "completada": bool(
+                        subtarea.get("completada", False)
+                    ),
+                    "fecha_actualizacion": ahora(),
+                },
+            )
+
+
+def actualizar_tarea(
+    tarea_id: str,
+    titulo: str,
+    descripcion: str,
+    responsables_ids: list[str],
+    fecha_entrega: str | None,
+    prioridad: str,
+    subtareas_por_integrante: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    tarea_anterior = obtener_tarea(tarea_id)
+
+    if tarea_anterior is None:
+        raise ValueError("La tarea no existe.")
+
+    titulo = titulo.strip()
+    responsables_ids = list(dict.fromkeys(responsables_ids))
+
+    if not titulo:
+        raise ValueError("El título de la tarea es obligatorio.")
+
+    actualizar_fila(
+        "tareas",
+        "id",
+        tarea_id,
+        {
+            "titulo": titulo,
+            "descripcion": descripcion.strip(),
+            "responsable_id": (
+                responsables_ids[0]
+                if responsables_ids
+                else None
+            ),
+            "fecha_entrega": fecha_entrega or None,
+            "prioridad": prioridad,
+            "fecha_actualizacion": ahora(),
+        },
+    )
+
+    _reemplazar_asignaciones(tarea_id, responsables_ids)
+    _guardar_subtareas(
+        tarea_id,
+        subtareas_por_integrante,
+    )
+
+    tarea = obtener_tarea(tarea_id)
+
+    if tarea:
+        actualizar_fila(
+            "tareas",
+            "id",
+            tarea_id,
+            {
+                "estado": tarea["estado"],
+                "avance": tarea["avance"],
+                "fecha_actualizacion": ahora(),
+            },
+        )
+
+    registrar_historial(
+        "Actualización",
+        tarea or tarea_anterior,
+        "Tarea, responsables o subtareas modificados",
+    )
+
+    return obtener_tarea(tarea_id) or tarea_anterior
+
+
+def actualizar_subtarea(
+    subtarea_id: str,
+    completada: bool,
+) -> None:
+    (
+        obtener_cliente_supabase()
+        .table("subtareas")
+        .update(
+            {
+                "completada": bool(completada),
+                "fecha_actualizacion": ahora(),
+            }
+        )
+        .eq("id", subtarea_id)
+        .execute()
+    )
+
+
+def eliminar_tarea(tarea_id: str) -> None:
+    tarea = obtener_tarea(tarea_id)
+
+    if tarea is None:
+        return
+
+    _eliminar_subtareas(tarea_id)
+
+    (
+        obtener_cliente_supabase()
+        .table("tarea_integrantes")
+        .delete()
+        .eq("tarea_id", tarea_id)
+        .execute()
+    )
+
+    eliminar_fila("tareas", "id", tarea_id)
+
+    registrar_historial(
+        "Eliminación",
+        tarea,
+        "Tarea eliminada",
+    )
+
+
+# ==========================================================
+# HISTORIAL
+# ==========================================================
 
 def obtener_historial() -> list[dict[str, Any]]:
     return cargar_filas("historial", "fecha")
 
 
-def obtener_configuracion() -> dict[str, Any]:
-    configuracion = {"nombre_proyecto": "Capstone Robótica", "proxima_entrega": ""}
-    for fila in cargar_filas("configuracion"):
-        if fila.get("clave") in configuracion:
-            configuracion[fila["clave"]] = fila.get("valor") or ""
-    return configuracion
-
-
-def guardar_configuracion(configuracion: dict[str, Any]) -> None:
-    for clave in ("nombre_proyecto", "proxima_entrega"):
-        valor = configuracion.get(clave, "")
-        existente = obtener_fila("configuracion", "clave", clave)
-        if existente:
-            actualizar_fila(
-                "configuracion",
-                "clave",
-                clave,
-                {"valor": valor, "fecha_actualizacion": ahora()},
-            )
-        else:
-            insertar_fila(
-                "configuracion",
-                {"clave": clave, "valor": valor, "fecha_actualizacion": ahora()},
-            )
-    registrar_evento("Configuración", None, "Proyecto", "Se actualizó la configuración general.")
-
-
-def registrar_evento(
+def registrar_historial(
     accion: str,
-    tarea_id: str | None,
-    tarea: str,
+    tarea: dict[str, Any],
     detalle: str,
 ) -> None:
     insertar_fila(
@@ -143,168 +462,104 @@ def registrar_evento(
             "id": uuid4().hex,
             "fecha": ahora(),
             "accion": accion,
-            "tarea_id": tarea_id,
-            "tarea": tarea,
+            "tarea_id": tarea.get("id"),
+            "tarea": tarea.get("titulo", ""),
             "detalle": detalle,
         },
     )
 
 
-def crear_tarea(
-    titulo: str,
-    descripcion: str,
-    responsable_ids: list[str] | None,
-    fecha_entrega: str,
-    prioridad: str,
-) -> None:
-    tarea_id = uuid4().hex
-    ahora_actual = ahora()
+# ==========================================================
+# CONFIGURACIÓN
+# ==========================================================
 
-    tarea = insertar_fila(
-        "tareas",
-        {
-            "id": tarea_id,
-            "titulo": titulo.strip(),
-            "descripcion": descripcion.strip(),
-            "responsable_id": (responsable_ids or [None])[0],
-            "fecha_entrega": fecha_entrega,
-            "prioridad": prioridad,
-            "estado": "Pendiente",
-            "avance": 0,
-            "fecha_creacion": ahora_actual,
-            "fecha_actualizacion": ahora_actual,
-        },
-    )
+def obtener_configuracion() -> dict[str, Any]:
+    filas = cargar_filas("configuracion")
 
-    _guardar_asignaciones(tarea_id, responsable_ids)
-
-    nombres = _nombres_integrantes(responsable_ids or [])
-    responsables_texto = ", ".join(nombres) if nombres else "Sin asignar"
-    registrar_evento(
-        "Creación",
-        tarea["id"],
-        tarea["titulo"],
-        f"Responsables: {responsables_texto}",
-    )
-
-
-def actualizar_tarea(
-    tarea_id: str,
-    estado: str,
-    avance: int,
-    responsable_ids: list[str] | None,
-    fecha_entrega: str,
-) -> None:
-    tarea = obtener_fila("tareas", "id", tarea_id)
-    if not tarea:
-        raise RuntimeError("No se encontró la tarea.")
-
-    responsables_anteriores = _asignaciones_de_tarea(tarea_id)
-    if not responsables_anteriores and tarea.get("responsable_id"):
-        responsables_anteriores = [tarea["responsable_id"]]
-
-    estado_anterior = tarea.get("estado", "Pendiente")
-    avance_anterior = int(tarea.get("avance") or 0)
-    fecha_anterior = tarea.get("fecha_entrega") or ""
-
-    responsable_ids = list(dict.fromkeys(responsable_ids or []))
-    avance = max(0, min(100, int(avance)))
-
-    if estado == "Completada":
-        avance = 100
-    elif avance == 100:
-        estado = "Completada"
-
-    actual = actualizar_fila(
-        "tareas",
-        "id",
-        tarea_id,
-        {
-            # Campo legado: conserva el primer responsable para compatibilidad.
-            "responsable_id": responsable_ids[0] if responsable_ids else None,
-            "fecha_entrega": fecha_entrega,
-            "estado": estado,
-            "avance": avance,
-            "fecha_actualizacion": ahora(),
-        },
-    )
-
-    _guardar_asignaciones(tarea_id, responsable_ids)
-
-    cambios: list[str] = []
-
-    if set(responsables_anteriores) != set(responsable_ids):
-        anteriores = ", ".join(_nombres_integrantes(responsables_anteriores)) or "Sin asignar"
-        nuevos = ", ".join(_nombres_integrantes(responsable_ids)) or "Sin asignar"
-        cambios.append(f"Responsables: {anteriores} → {nuevos}")
-
-    if fecha_anterior != fecha_entrega:
-        cambios.append(
-            f"Fecha de entrega: {fecha_anterior or 'Sin fecha'} → {fecha_entrega or 'Sin fecha'}"
-        )
-    if estado_anterior != actual["estado"]:
-        cambios.append(f"Estado: {estado_anterior} → {actual['estado']}")
-    if avance_anterior != actual["avance"]:
-        cambios.append(f"Avance: {avance_anterior}% → {actual['avance']}%")
-
-    registrar_evento(
-        "Actualización",
-        tarea_id,
-        actual["titulo"],
-        "; ".join(cambios) or "Sin cambios",
-    )
-
-
-def eliminar_tarea(tarea_id: str) -> None:
-    tarea = obtener_fila("tareas", "id", tarea_id)
-    if not tarea:
-        return
-
-    eliminar_fila("tareas", "id", tarea_id)
-    registrar_evento(
-        "Eliminación",
-        tarea_id,
-        tarea["titulo"],
-        "Tarea eliminada. El historial se conserva.",
-    )
-
-
-def _nombres_integrantes(integrante_ids: list[str]) -> list[str]:
-    if not integrante_ids:
-        return []
-    nombres = {
-        integrante["id"]: integrante["nombre"]
-        for integrante in obtener_integrantes()
+    configuracion = {
+        fila["clave"]: fila.get("valor", "")
+        for fila in filas
     }
-    return [nombres.get(integrante_id, integrante_id) for integrante_id in integrante_ids]
 
+    configuracion.setdefault(
+        "nombre_proyecto",
+        "Capstone Robótica",
+    )
+    configuracion.setdefault("proxima_entrega", "")
+
+    return configuracion
+
+
+def guardar_configuracion(
+    configuracion: dict[str, Any],
+) -> None:
+    actuales = {
+        fila["clave"]: fila
+        for fila in cargar_filas("configuracion")
+    }
+
+    for clave, valor in configuracion.items():
+        if clave in actuales:
+            actualizar_fila(
+                "configuracion",
+                "clave",
+                clave,
+                {
+                    "valor": str(valor),
+                    "fecha_actualizacion": ahora(),
+                },
+            )
+        else:
+            insertar_fila(
+                "configuracion",
+                {
+                    "clave": clave,
+                    "valor": str(valor),
+                    "fecha_actualizacion": ahora(),
+                },
+            )
+
+
+# ==========================================================
+# RESUMEN
+# ==========================================================
 
 def avance_por_integrante() -> list[dict[str, Any]]:
+    integrantes = obtener_integrantes()
     tareas = obtener_tareas()
+
     resultado = []
 
-    for integrante in obtener_integrantes():
+    for integrante in integrantes:
         asignadas = [
             tarea
             for tarea in tareas
-            if integrante["id"] in tarea.get("responsable_ids", [])
+            if integrante["id"]
+            in tarea.get("responsables_ids", [])
         ]
-        promedio = (
-            round(
-                sum(int(tarea.get("avance") or 0) for tarea in asignadas)
-                / len(asignadas),
-                1,
+
+        avances = [
+            tarea["progreso_individual"].get(
+                integrante["id"],
+                0,
             )
-            if asignadas
+            for tarea in asignadas
+        ]
+
+        promedio = (
+            round(sum(avances) / len(avances), 1)
+            if avances
             else 0
         )
+
         resultado.append(
             {
                 "Integrante": integrante["nombre"],
-                "Rol": integrante.get("rol", ""),
+                "Rol": integrante["rol"],
                 "Tareas": len(asignadas),
                 "Completadas": sum(
-                    tarea.get("estado") == "Completada" for tarea in asignadas
+                    avance == 100
+                    for avance in avances
                 ),
                 "Avance (%)": promedio,
             }
