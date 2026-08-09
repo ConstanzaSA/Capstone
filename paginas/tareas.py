@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, datetime
 
 import streamlit as st
@@ -15,11 +17,12 @@ encabezado("Tareas actuales", "Crea, asigna, actualiza o reasigna actividades")
 
 integrantes = obtener_integrantes()
 nombres = {integrante["id"]: integrante["nombre"] for integrante in integrantes}
-opciones_responsable: list[str | None] = [None, *nombres.keys()]
+opciones_ids = [integrante["id"] for integrante in integrantes]
 
 
-def nombre_responsable(integrante_id: str | None) -> str:
-    return "Sin asignar" if integrante_id is None else nombres.get(integrante_id, "Sin asignar")
+def nombres_responsables(ids: list[str]) -> str:
+    nombres_seleccionados = [nombres.get(i, "Integrante") for i in ids]
+    return ", ".join(nombres_seleccionados) if nombres_seleccionados else "Sin asignar"
 
 
 def convertir_fecha(valor: str) -> date:
@@ -29,29 +32,35 @@ def convertir_fecha(valor: str) -> date:
         return date.today()
 
 
-with st.expander("+ Añadir una tarea", expanded=True):
+with st.expander("➕ Añadir una tarea", expanded=True):
     with st.form("formulario_nueva_tarea", clear_on_submit=True):
         titulo = st.text_input("Título de la tarea")
         descripcion = st.text_area("Descripción")
+
         col1, col2, col3 = st.columns(3)
-        responsable = col1.selectbox(
-            "Responsable",
-            opciones_responsable,
-            format_func=nombre_responsable,
-            help="Puedes dejar la tarea sin responsable y asignarla más adelante.",
+
+        responsables = col1.multiselect(
+            "Responsable(s)",
+            options=opciones_ids,
+            format_func=lambda integrante_id: nombres.get(integrante_id, "Integrante"),
+            help="Puedes seleccionar una, varias personas o dejar la tarea sin responsable.",
         )
+
         fecha_entrega = col2.date_input(
             "Fecha de entrega",
             value=date.today(),
             format="DD/MM/YYYY",
             help="Día en que la tarea debe estar lista.",
         )
+
         prioridad = col3.selectbox("Prioridad", ["Baja", "Media", "Alta"])
+
         enviar = st.form_submit_button(
             "Crear tarea",
             type="primary",
             use_container_width=True,
         )
+
         if enviar:
             if not titulo.strip():
                 st.error("El título de la tarea es obligatorio.")
@@ -59,15 +68,17 @@ with st.expander("+ Añadir una tarea", expanded=True):
                 crear_tarea(
                     titulo,
                     descripcion,
-                    responsable,
+                    responsables,
                     fecha_entrega.isoformat(),
                     prioridad,
                 )
                 st.success("Tarea creada correctamente.")
                 st.rerun()
 
+
 st.subheader("Lista de tareas")
 tareas = obtener_tareas()
+
 if not tareas:
     st.info("Todavía no hay tareas registradas.")
 
@@ -82,27 +93,32 @@ for tarea in sorted(
     with st.container(border=True):
         st.markdown(f"### {tarea['titulo']}")
         fecha_texto = tarea.get("fecha_entrega") or "Sin fecha"
-        st.caption(f"Entrega: {fecha_texto} · Prioridad: {tarea['prioridad']}")
+        st.caption(
+            f"Responsable(s): {nombres_responsables(tarea.get('responsable_ids', []))} · "
+            f"Entrega: {fecha_texto} · Prioridad: {tarea['prioridad']}"
+        )
+
         if tarea.get("descripcion"):
             st.write(tarea["descripcion"])
 
-        col1, col2, col3, col4 = st.columns([1.25, 1.05, 1.05, 1])
-        responsable_actual = tarea.get("responsable_id")
-        responsable = col1.selectbox(
-            "Responsable",
-            opciones_responsable,
-            index=opciones_responsable.index(responsable_actual)
-            if responsable_actual in opciones_responsable
-            else 0,
-            format_func=nombre_responsable,
-            key=f"responsable_{tarea['id']}",
+        col1, col2, col3, col4 = st.columns([1.5, 1.1, 1.05, 1])
+
+        responsables_actuales = tarea.get("responsable_ids", [])
+        responsables = col1.multiselect(
+            "Responsable(s)",
+            options=opciones_ids,
+            default=[i for i in responsables_actuales if i in opciones_ids],
+            format_func=lambda integrante_id: nombres.get(integrante_id, "Integrante"),
+            key=f"responsables_{tarea['id']}",
         )
+
         fecha = col2.date_input(
             "Fecha de entrega",
             value=convertir_fecha(tarea.get("fecha_entrega", "")),
             format="DD/MM/YYYY",
             key=f"fecha_{tarea['id']}",
         )
+
         estados = ["Pendiente", "En progreso", "Completada"]
         estado = col3.selectbox(
             "Estado",
@@ -110,6 +126,7 @@ for tarea in sorted(
             index=estados.index(tarea["estado"]),
             key=f"estado_{tarea['id']}",
         )
+
         avance = col4.slider(
             "Avance",
             0,
@@ -120,6 +137,7 @@ for tarea in sorted(
         )
 
         boton1, boton2 = st.columns([4, 1])
+
         if boton1.button(
             "Guardar cambios",
             key=f"guardar_{tarea['id']}",
@@ -130,11 +148,12 @@ for tarea in sorted(
                 tarea["id"],
                 estado,
                 avance,
-                responsable,
+                responsables,
                 fecha.isoformat(),
             )
             st.success("Cambios guardados.")
             st.rerun()
+
         if boton2.button(
             "Eliminar",
             key=f"eliminar_{tarea['id']}",
