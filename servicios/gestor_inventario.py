@@ -113,3 +113,93 @@ def eliminar_material(material_id: str) -> None:
         "id",
         material_id,
     )
+
+def agregar_stock(
+    material: str,
+    cantidad: float,
+    unidad: str,
+    responsable_id: str | None = None,
+    observaciones: str = "",
+) -> None:
+    """
+    Agrega una cantidad de un material al inventario.
+
+    Si el material ya existe, aumenta su cantidad.
+    Si no existe, crea un nuevo registro.
+    """
+
+    material = material.strip()
+
+    if not material:
+        raise ValueError(
+            "El nombre del material es obligatorio."
+        )
+
+    if cantidad <= 0:
+        raise ValueError(
+            "La cantidad debe ser mayor que 0."
+        )
+
+    inventario = obtener_inventario()
+
+    # Buscar si el material ya existe
+    existente = next(
+        (
+            item
+            for item in inventario
+            if item.get("material", "").strip().lower()
+            == material.lower()
+        ),
+        None,
+    )
+
+    # ======================================================
+    # MATERIAL YA EXISTENTE
+    # ======================================================
+
+    if existente:
+
+        cantidad_actual = float(
+            existente.get("cantidad") or 0
+        )
+
+        actualizar_fila(
+            "inventario",
+            "id",
+            existente["id"],
+            {
+                "cantidad": (
+                    cantidad_actual
+                    + cantidad
+                ),
+                "responsable_id": (
+                    responsable_id
+                    if responsable_id is not None
+                    else existente.get(
+                        "responsable_id"
+                    )
+                ),
+                "disponible": True,
+                "fecha_actualizacion": ahora(),
+            },
+        )
+
+    # ======================================================
+    # MATERIAL NUEVO
+    # ======================================================
+
+    else:
+
+        insertar_fila(
+            "inventario",
+            {
+                "id": uuid4().hex,
+                "material": material,
+                "responsable_id": responsable_id,
+                "cantidad": cantidad,
+                "unidad": unidad.strip(),
+                "disponible": True,
+                "observaciones": observaciones.strip(),
+                "fecha_actualizacion": ahora(),
+            },
+        )
