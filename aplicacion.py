@@ -11,7 +11,7 @@ from componentes.estilos import aplicar_estilos
 from servicios.almacenamiento import inicializar_datos
 
 st.set_page_config(
-    page_title="Proyecto de Capstone",
+    page_title="Seguimiento de Robótica",
     page_icon="🤖",
     layout="wide",
 )
@@ -21,7 +21,7 @@ inicializar_datos()
 
 PAGINAS = [
     st.Page(str(CARPETA_PROYECTO / "paginas" / "inicio.py"), title="Inicio", icon="", default=True),
-    st.Page(str(CARPETA_PROYECTO / "paginas" / "tareas.py"), title="Tareas", icon=""),
+    st.Page(str(CARPETA_PROYECTO / "paginas" / "tareas.py"), title="Tareas actuales", icon=""),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "integrantes.py"), title="Integrantes", icon=""),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "inventario.py"), title="Inventario", icon=""),
     st.Page(str(CARPETA_PROYECTO / "paginas" / "historial.py"), title="Historial", icon=""),
