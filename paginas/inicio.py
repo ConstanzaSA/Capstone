@@ -121,7 +121,7 @@ else:
         use_container_width=True,
     )
 
-st.subheader("Tareas semanales")
+st.subheader("Resumen Tareas")
 
 if not tareas:
     st.info(
